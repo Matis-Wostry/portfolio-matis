@@ -1,0 +1,19 @@
+{
+  "name": "@portfolio-matis/import",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "start": "node src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@portfolio-matis/content": "workspace:*",
+    "node-html-parser": "^7.1.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.7"
+  }
+}
