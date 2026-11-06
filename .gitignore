@@ -11,7 +11,7 @@ dist/
 *.db
 *.db-shm
 *.db-wal
-/data/
+data/
 /import/
 
 # Journaux et fichiers d'éditeur ou de système

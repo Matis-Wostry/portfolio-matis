@@ -7,6 +7,8 @@
   },
   "packageManager": "pnpm@10.28.1",
   "scripts": {
+    "dev:api": "pnpm --filter @portfolio-matis/api dev",
+    "import:jeu": "pnpm --filter @portfolio-matis/import start",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },

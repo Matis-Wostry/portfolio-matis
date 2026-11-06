@@ -1,0 +1,19 @@
+services:
+  api:
+    image: ghcr.io/matis-wostry/portfolio-matis-api:latest
+    container_name: portfolio-matis-api
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - portfolio_matis_data:/data
+    networks:
+      - caddy
+
+volumes:
+  # La base (data.db) et les médias (media/) : c'est ce volume qu'il faut sauvegarder.
+  portfolio_matis_data:
+
+networks:
+  caddy:
+    external: true
+    name: ${CADDY_NETWORK:-caddy}
