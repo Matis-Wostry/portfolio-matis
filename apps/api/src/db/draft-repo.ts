@@ -14,12 +14,16 @@ import type { Db } from './client.ts';
 import { contact, educations, experiences, profile, projectCategories, projects, skillCategories } from './schema.ts';
 
 export class DuplicateIdError extends Error {
+  statusCode = 409;
+
   constructor(id: string) {
     super(`L’identifiant « ${id} » existe déjà`);
   }
 }
 
 export class ReorderMismatchError extends Error {
+  statusCode = 400;
+
   constructor() {
     super('La liste doit contenir chaque identifiant existant une seule fois');
   }
@@ -52,6 +56,7 @@ export type DraftRepo = {
   update<C extends CollectionName>(collection: C, id: string, input: Omit<Collections[C], 'id' | 'position'>): Collections[C] | null;
   remove(collection: CollectionName, id: string): boolean;
   reorder(collection: CollectionName, ids: string[]): void;
+  putProjectCategory(category: ProjectCategory): void;
   /** Exécute `work` en une seule transaction : une erreur annule tout. */
   transaction<T>(work: () => T): T;
 };
@@ -120,6 +125,9 @@ export const createDraftRepo = (db: Db): DraftRepo => {
           tx.update(table(collection)).set({ position }).where(eq(table(collection).id, id)).run();
         });
       });
+    },
+    putProjectCategory: (category) => {
+      db.insert(projectCategories).values(category).onConflictDoUpdate({ target: projectCategories.id, set: category }).run();
     },
     transaction: (work) => db.$client.transaction(work)(),
   };
