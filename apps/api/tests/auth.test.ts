@@ -1,8 +1,9 @@
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { hashPassword, verifyPassword } from '../src/auth/password.ts';
 import { sessions } from '../src/db/schema.ts';
-import { ADMIN_ORIGIN, createTestApp, loginCookie, TEST_PASSWORD } from './helpers.ts';
+import { ADMIN_ORIGIN, createTestApp, loginCookie, tempDir, TEST_PASSWORD } from './helpers.ts';
 
 let app: FastifyInstance;
 
@@ -142,6 +143,39 @@ describe('session', () => {
     app.db.update(sessions).set({ expiresAt: Date.now() - 1 }).run();
     await loginCookie(app);
     expect(app.db.select().from(sessions).all()).toHaveLength(1);
+  });
+});
+
+describe('changement de mot de passe', () => {
+  const restart = async (databasePath: string, adminPasswordHash: string) => {
+    const restarted = await createTestApp({ databasePath, adminPasswordHash });
+    return restarted;
+  };
+
+  const meOn = (target: FastifyInstance, cookie: string) =>
+    target.inject({ method: 'GET', url: '/auth/me', headers: { cookie } });
+
+  test('un redémarrage avec le même mot de passe garde la session', async () => {
+    const databasePath = join(tempDir(), 'data.db');
+    const hash = await hashPassword(TEST_PASSWORD);
+    const first = await restart(databasePath, hash);
+    const cookie = await loginCookie(first);
+    await first.close();
+
+    const second = await restart(databasePath, hash);
+    expect((await meOn(second, cookie)).statusCode).toBe(200);
+    await second.close();
+  });
+
+  test('changer le mot de passe ferme les sessions déjà ouvertes', async () => {
+    const databasePath = join(tempDir(), 'data.db');
+    const first = await restart(databasePath, await hashPassword(TEST_PASSWORD));
+    const cookie = await loginCookie(first);
+    await first.close();
+
+    const second = await restart(databasePath, await hashPassword('nouveau-mot-de-passe'));
+    expect((await meOn(second, cookie)).statusCode).toBe(401);
+    await second.close();
   });
 });
 

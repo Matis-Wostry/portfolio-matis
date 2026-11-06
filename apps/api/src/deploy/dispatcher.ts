@@ -13,6 +13,7 @@ export interface Dispatcher {
 type WorkflowRun = { created_at: string; html_url: string; status: string; conclusion: string | null };
 
 const NO_RUN_TIMEOUT_MS = 10 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 10 * 1000;
 
 const toState = (run: WorkflowRun): RunState => {
   if (run.status !== 'completed') return 'in_progress';
@@ -22,10 +23,16 @@ const toState = (run: WorkflowRun): RunState => {
 // GitHub donne ses dates à la seconde : un run lancé juste après l'appel peut sembler antérieur de quelques millisecondes.
 const toSeconds = (date: string | number): number => Math.floor(new Date(date).getTime() / 1000);
 
-export const createGithubDispatcher = (token: string, fetchImpl: typeof fetch = fetch, now: () => number = Date.now): Dispatcher => {
+export const createGithubDispatcher = (
+  token: string,
+  fetchImpl: typeof fetch = fetch,
+  now: () => number = Date.now,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Dispatcher => {
   const request = (site: DeploySite, path: string, init?: RequestInit) =>
     fetchImpl(`https://api.github.com/repos/${site.repo}/actions/workflows/${site.workflow}/${path}`, {
       ...init,
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         Accept: 'application/vnd.github+json',
         Authorization: `Bearer ${token}`,
@@ -36,7 +43,9 @@ export const createGithubDispatcher = (token: string, fetchImpl: typeof fetch = 
 
   return {
     dispatch: async (site) => {
-      const response = await request(site, 'dispatches', { method: 'POST', body: JSON.stringify({ ref: site.ref }) });
+      const response = await request(site, 'dispatches', { method: 'POST', body: JSON.stringify({ ref: site.ref }) }).catch(() => {
+        throw new Error('GitHub ne répond pas');
+      });
       if (!response.ok) throw new Error(`GitHub a répondu ${response.status}`);
     },
 

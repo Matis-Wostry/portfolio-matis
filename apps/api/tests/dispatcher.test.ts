@@ -40,6 +40,30 @@ describe('dispatch', () => {
   });
 });
 
+describe('délai', () => {
+  const hanging = () => {
+    const seen: (AbortSignal | null | undefined)[] = [];
+    const fetchImpl = ((_url: string, init?: RequestInit) => {
+      seen.push(init?.signal);
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('délai dépassé')));
+      });
+    }) as typeof fetch;
+    return { seen, fetchImpl };
+  };
+
+  test('un GitHub muet ne bloque pas la publication : dispatch finit par échouer', async () => {
+    const { seen, fetchImpl } = hanging();
+    await expect(createGithubDispatcher('jeton', fetchImpl, Date.now, 5).dispatch(SITE)).rejects.toThrow('GitHub ne répond pas');
+    expect(seen[0]).toBeInstanceOf(AbortSignal);
+  });
+
+  test('un GitHub muet donne un état inconnu sur latestRun', async () => {
+    const { fetchImpl } = hanging();
+    await expect(createGithubDispatcher('jeton', fetchImpl, Date.now, 5).latestRun(SITE, SINCE)).resolves.toEqual({ state: 'unknown', url: null });
+  });
+});
+
 describe('latestRun', () => {
   const latest = (response: Response, now = '2026-11-06T22:01:00.000Z') =>
     createGithubDispatcher('jeton', fakeFetch(() => response).fetchImpl, () => Date.parse(now)).latestRun(SITE, SINCE);

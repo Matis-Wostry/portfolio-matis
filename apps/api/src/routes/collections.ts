@@ -3,7 +3,6 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
   createInput,
-  draftStateSchema,
   educationSchema,
   experienceSchema,
   PROJECT_CATEGORY_IDS,
@@ -31,9 +30,8 @@ const registerCollection = (base: FastifyInstance, { path, collection, schema, t
   const tags = [tag];
   const security = [{ session: [] }];
 
-  app.get(url, { schema: { tags, security, summary: 'Liste, dans l’ordre', response: { 200: z.array(schema) } } }, async () =>
-    repo.list(collection),
-  );
+  // Les lectures ne valident pas leur réponse : un contenu devenu non conforme doit rester lisible pour être corrigé.
+  app.get(url, { schema: { tags, security, summary: 'Liste, dans l’ordre' } }, async () => repo.list(collection));
 
   app.post(
     url,
@@ -75,7 +73,7 @@ const registerProjectCategories = (base: FastifyInstance): void => {
   const tags = ['Catégories de projets'];
   const security = [{ session: [] }];
 
-  app.get('/project-categories', { schema: { tags, security, summary: 'Liste les trois catégories', response: { 200: z.array(projectCategorySchema) } } }, async () =>
+  app.get('/project-categories', { schema: { tags, security, summary: 'Liste les trois catégories' } }, async () =>
     base.repo.list('projectCategories'),
   );
 
@@ -108,7 +106,7 @@ export const collectionRoutes = async (base: FastifyInstance): Promise<void> => 
 
   base.withTypeProvider<ZodTypeProvider>().get(
     '/draft',
-    { schema: { tags: ['Brouillon'], security: [{ session: [] }], summary: 'Tout le brouillon, pour l’aperçu', response: { 200: draftStateSchema } } },
+    { schema: { tags: ['Brouillon'], security: [{ session: [] }], summary: 'Tout le brouillon, pour l’aperçu' } },
     async () => base.repo.readState(),
   );
 };

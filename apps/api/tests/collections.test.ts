@@ -144,6 +144,23 @@ describe('présentation et contact', () => {
   });
 });
 
+describe('contenu devenu non conforme après un changement de schéma', () => {
+  const { contact } = draftContent();
+
+  test('le brouillon et les listes restent lisibles, pour pouvoir le corriger', async () => {
+    await call('PUT', '/admin/contact', contact);
+    await call('POST', '/admin/projects', projectInput());
+    app.db.$client.prepare("update contact set email = 'plus-valide'").run();
+    app.db.$client.prepare("update projects set category_id = 'ancienne'").run();
+
+    expect((await call('GET', '/admin/draft')).statusCode).toBe(200);
+    expect((await call('GET', '/admin/contact')).statusCode).toBe(200);
+    const projects = await call('GET', '/admin/projects');
+    expect(projects.statusCode).toBe(200);
+    expect(projects.json()[0].categoryId).toBe('ancienne');
+  });
+});
+
 test('GET /admin/draft rassemble tout le brouillon', async () => {
   await call('POST', '/admin/projects', projectInput());
   const draft = (await call('GET', '/admin/draft')).json();

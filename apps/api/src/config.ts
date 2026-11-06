@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PASSWORD_HASH_PATTERN } from './auth/password.ts';
 
 export type DeploySite = { name: string; repo: string; workflow: string; ref: string };
 
@@ -35,9 +36,12 @@ const parseDeploySites = (raw: string, ctx: z.RefinementCtx): DeploySite[] => {
 const envSchema = z.object({
   DATABASE_PATH: z.string().min(1).default('data/data.db'),
   MEDIA_DIR: z.string().min(1).default('data/media'),
-  ADMIN_PASSWORD_HASH: z.string({ error: 'obligatoire' }).min(1),
+  ADMIN_PASSWORD_HASH: z
+    .string({ error: 'obligatoire' })
+    .regex(PASSWORD_HASH_PATTERN, 'doit être le résultat exact de la commande hash-password'),
   SESSION_SECRET: z.string({ error: 'obligatoire' }).min(32, 'doit faire au moins 32 caractères'),
-  ADMIN_ORIGIN: z.url({ error: 'doit être une adresse complète' }),
+  // Ramenée à ce que le navigateur envoie dans l'en-tête Origin : sans barre finale ni chemin.
+  ADMIN_ORIGIN: z.url({ error: 'doit être une adresse complète' }).transform((url) => new URL(url).origin),
   COOKIE_SECURE: z.string().optional(),
   DEPLOY_SITES: z.string().default('[]').transform(parseDeploySites),
   GITHUB_DISPATCH_TOKEN: z.string().min(1).optional(),

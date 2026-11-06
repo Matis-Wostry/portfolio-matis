@@ -33,10 +33,15 @@ export const mediaFileParams = z.object({
 export const sendMedia = async (app: FastifyInstance, reply: FastifyReply, file: string): Promise<FastifyReply> => {
   const row = app.db.select().from(media).where(eq(media.file, file)).get();
   if (!row) return reply.code(404).send({ message: 'Média introuvable' });
-  return reply
-    .header('Content-Type', row.mime)
-    .header('X-Content-Type-Options', 'nosniff')
-    .send(await readFile(join(app.config.mediaDir, file)));
+
+  let content: Buffer;
+  try {
+    content = await readFile(join(app.config.mediaDir, file));
+  } catch (error) {
+    if ((error as { code?: string }).code !== 'ENOENT') throw error;
+    return reply.code(404).send({ message: `Le fichier « ${file} » a disparu du serveur` });
+  }
+  return reply.header('Content-Type', row.mime).header('X-Content-Type-Options', 'nosniff').send(content);
 };
 
 const isTooLarge = (error: unknown): boolean => (error as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE';

@@ -23,7 +23,7 @@ declare module 'fastify' {
 export const registerSessionGuard = (app: FastifyInstance): void => {
   app.decorate('requireSession', async (request, reply) => {
     const token = readSessionToken(request);
-    if (!token || !isSessionValid(app.db, token)) {
+    if (!token || !isSessionValid(app.db, token, app.config.adminPasswordHash)) {
       return reply.code(401).send({ message: 'Session expirée : reconnectez-vous' });
     }
     return undefined;
@@ -54,7 +54,7 @@ export const authRoutes = async (base: FastifyInstance): Promise<void> => {
         return reply.code(401).send({ message: 'Mot de passe incorrect' });
       }
       return reply
-        .setCookie(COOKIE_NAME, createSession(app.db), {
+        .setCookie(COOKIE_NAME, createSession(app.db, app.config.adminPasswordHash), {
           signed: true,
           httpOnly: true,
           secure: app.config.cookieSecure,
@@ -71,7 +71,7 @@ export const authRoutes = async (base: FastifyInstance): Promise<void> => {
     { onRequest: app.requireSession, schema: { tags: ['Connexion'], summary: 'Ferme la session' } },
     async (request, reply) => {
       const token = readSessionToken(request);
-      if (token) deleteSession(app.db, token);
+      if (token) deleteSession(app.db, token, app.config.adminPasswordHash);
       return reply.clearCookie(COOKIE_NAME, { path: '/' }).send({ ok: true });
     },
   );

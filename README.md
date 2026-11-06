@@ -52,7 +52,16 @@ pnpm --filter @portfolio-matis/api seed ../../import/proposition.json
 pnpm dev:api
 ```
 
-La documentation interactive s'ouvre sur <http://localhost:3000/docs>.
+La documentation s'ouvre sur <http://localhost:3000/docs>. Elle sert à découvrir les routes et leurs schémas : ses boutons d'essai répondent 403 sur les écritures, qui n'acceptent que l'origine de l'interface. En attendant l'interface, on écrit avec `curl`, en remplaçant le mot de passe (sous Windows, dans Git Bash, car PowerShell 5 traite `curl` différemment) :
+
+```sh
+curl -c cookies.txt -H "Origin: http://localhost:5173" -H "Content-Type: application/json" \
+  -d '{"password":"ton-mot-de-passe"}' http://localhost:3000/auth/login
+
+curl -b cookies.txt http://localhost:3000/admin/projects
+curl -b cookies.txt -X POST -H "Origin: http://localhost:5173" http://localhost:3000/admin/publish
+curl http://localhost:3000/public/snapshot
+```
 
 `pnpm import:jeu` suppose que les dépôts `jeu` et `classique` sont à côté de celui-ci. Il écrit dans `import/`, ignoré par Git : `proposition.json` reprend le contenu du jeu, et `ecarts.md` liste ce qui diffère du site classique.
 
@@ -71,7 +80,7 @@ La documentation interactive s'ouvre sur <http://localhost:3000/docs>.
 ## Sécurité
 
 - Mot de passe haché avec scrypt, secrets uniquement dans l'environnement : sans eux, le serveur refuse de démarrer
-- Cookie de session `HttpOnly`, `Secure`, `SameSite=Strict`, dont seul le hash est stocké
+- Cookie de session `HttpOnly`, `Secure`, `SameSite=Strict`, dont seule une empreinte est stockée ; changer le mot de passe ferme toutes les sessions
 - Écritures limitées à l'origine de l'interface, tentatives de connexion limitées à 5 par 15 minutes
 - Médias vérifiés sur leur contenu réel, limités en taille, et enregistrés sous un nom généré par le serveur
 - Un test parcourt toutes les routes d'écriture et vérifie que chacune exige une session

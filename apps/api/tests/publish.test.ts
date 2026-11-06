@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { rmSync, writeFileSync } from 'node:fs';
+import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 import type { FastifyInstance } from 'fastify';
@@ -7,7 +7,7 @@ import { publicSnapshotSchema, type DraftContent } from '@portfolio-matis/conten
 import { buildApp } from '../src/app.ts';
 import type { DeploySite } from '../src/config.ts';
 import { seedDraft } from '../src/db/draft-repo.ts';
-import { media } from '../src/db/schema.ts';
+import { media, snapshots } from '../src/db/schema.ts';
 import type { Dispatcher, RunState } from '../src/deploy/dispatcher.ts';
 import { ADMIN_ORIGIN, createTestApp, draftContent, loginCookie, projectInput, testConfig } from './helpers.ts';
 
@@ -173,6 +173,55 @@ describe('projets masqués et médias', () => {
   test('un chemin détourné répond 400', async () => {
     await setup();
     expect((await publicMedia('..%2f..%2fetc%2fpasswd')).statusCode).toBe(400);
+  });
+});
+
+describe('média disparu du disque', () => {
+  test('un média publié mais disparu répond 404, pour qu’un build échoue clairement', async () => {
+    const cookie = await setup();
+    const file = addMedia();
+    updateProject({ captures: [{ file, alt: 'A' }] });
+    await publish(cookie);
+    rmSync(join(app.config.mediaDir, file));
+    const response = await publicMedia(file);
+    expect(response.statusCode).toBe(404);
+    expect(response.json().message).toContain(file);
+  });
+});
+
+describe('instantané publié avec un ancien schéma', () => {
+  const setupStale = async () => {
+    const cookie = await setup();
+    app.db.insert(snapshots).values({ publishedAt: '2026-11-06T22:00:00.000Z', content: '{"ancien":true}' }).run();
+    return cookie;
+  };
+
+  test('la lecture publique le dit clairement, sans erreur 500', async () => {
+    await setupStale();
+    const response = await publicSnapshot();
+    expect(response.statusCode).toBe(409);
+    expect(response.json().message).toMatch(/republi/i);
+  });
+
+  test('/admin/status reste lisible et propose de republier', async () => {
+    const cookie = await setupStale();
+    const response = await app.inject({ method: 'GET', url: '/admin/status', headers: { cookie } });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ hasUnpublishedChanges: true, lastPublishedAt: '2026-11-06T22:00:00.000Z' });
+  });
+
+  test('republier répare la lecture publique', async () => {
+    const cookie = await setupStale();
+    expect((await publish(cookie)).statusCode).toBe(200);
+    expect((await publicSnapshot()).statusCode).toBe(200);
+  });
+
+  test('un média ne peut pas être supprimé tant que l’instantané est illisible', async () => {
+    const cookie = await setupStale();
+    const file = addMedia();
+    const response = await app.inject({ method: 'DELETE', url: `/admin/media/${file}`, headers: { origin: ADMIN_ORIGIN, cookie } });
+    expect(response.statusCode).toBe(409);
+    expect(existsSync(join(app.config.mediaDir, file))).toBe(true);
   });
 });
 

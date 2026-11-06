@@ -17,6 +17,7 @@ dist/
 
 # Journaux et fichiers d'éditeur ou de système
 *.log
+cookies.txt
 .DS_Store
 Thumbs.db
 /.vscode/

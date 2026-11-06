@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 
 const env = {
-  ADMIN_PASSWORD_HASH: 'scrypt:sel:hash',
+  ADMIN_PASSWORD_HASH: `scrypt:abcd:${'0'.repeat(128)}`,
   SESSION_SECRET: 's'.repeat(32),
   ADMIN_ORIGIN: 'https://admin.matis-wostry.com',
 };
@@ -16,6 +16,20 @@ describe('loadConfig', () => {
   test('refuse un secret de session trop court', () => {
     expect(() => loadConfig({ ...env, SESSION_SECRET: 'court' })).toThrow(/SESSION_SECRET/);
   });
+
+  test.each(['pas-un-hash', 'scrypt:abcd:court', ` ${env.ADMIN_PASSWORD_HASH}`])(
+    'un hash mal collé (%s) empêche le démarrage au lieu de refuser toute connexion',
+    (hash) => {
+      expect(() => loadConfig({ ...env, ADMIN_PASSWORD_HASH: hash })).toThrow(/ADMIN_PASSWORD_HASH/);
+    },
+  );
+
+  test.each(['https://admin.matis-wostry.com/', 'https://admin.matis-wostry.com/page'])(
+    'l’origine %s est ramenée à ce que le navigateur envoie',
+    (origin) => {
+      expect(loadConfig({ ...env, ADMIN_ORIGIN: origin }).adminOrigin).toBe('https://admin.matis-wostry.com');
+    },
+  );
 
   test('applique des valeurs par défaut sûres', () => {
     expect(loadConfig(env)).toMatchObject({

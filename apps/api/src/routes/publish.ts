@@ -7,12 +7,13 @@ import {
   collectMediaFiles,
   draftContentSchema,
   findPublishIssues,
+  type DraftContent,
   type DraftState,
   type PublishIssue,
 } from '@portfolio-matis/content';
 import type { DeploySite } from '../config.ts';
 import { deploys, media } from '../db/schema.ts';
-import { insertSnapshot, latestSnapshot } from '../db/snapshots.ts';
+import { insertSnapshot, latestSnapshot, latestSnapshotInfo, StaleSnapshotError } from '../db/snapshots.ts';
 import type { RunStatus } from '../deploy/dispatcher.ts';
 
 const findMissingMedia = (app: FastifyInstance, state: DraftState): PublishIssue[] =>
@@ -22,6 +23,16 @@ const findMissingMedia = (app: FastifyInstance, state: DraftState): PublishIssue
       return !known || !existsSync(join(app.config.mediaDir, file));
     })
     .map((file) => ({ path: `media.${file}`, message: `Le fichier « ${file} » est introuvable` }));
+
+/** Un instantané devenu illisible compte comme « à republier », sans empêcher de voir l'état. */
+const readPublishedContent = (app: FastifyInstance): DraftContent | null => {
+  try {
+    return latestSnapshot(app.db)?.content ?? null;
+  } catch (error) {
+    if (error instanceof StaleSnapshotError) return null;
+    throw error;
+  }
+};
 
 const dispatchSite = async (app: FastifyInstance, site: DeploySite): Promise<string | null> => {
   try {
@@ -69,8 +80,9 @@ export const publishRoutes = async (app: FastifyInstance): Promise<void> => {
     '/status',
     { schema: { tags, security, summary: 'Brouillon à publier, et état du dernier déploiement de chaque site' } },
     async () => {
-      const latest = latestSnapshot(app.db);
-      const rows = latest ? app.db.select().from(deploys).where(eq(deploys.snapshotId, latest.id)).all() : [];
+      const info = latestSnapshotInfo(app.db);
+      const publishedContent = readPublishedContent(app);
+      const rows = info ? app.db.select().from(deploys).where(eq(deploys.snapshotId, info.id)).all() : [];
 
       const statuses = await Promise.all(
         rows.map(async ({ site: name, dispatchedAt, error }) => {
@@ -83,8 +95,8 @@ export const publishRoutes = async (app: FastifyInstance): Promise<void> => {
       );
 
       return {
-        hasUnpublishedChanges: !latest || canonicalContent(app.repo.readState()) !== canonicalContent(latest.content),
-        lastPublishedAt: latest?.publishedAt ?? null,
+        hasUnpublishedChanges: !publishedContent || canonicalContent(app.repo.readState()) !== canonicalContent(publishedContent),
+        lastPublishedAt: info?.publishedAt ?? null,
         deploys: statuses,
       };
     },

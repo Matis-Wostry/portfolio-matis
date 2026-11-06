@@ -24,6 +24,7 @@ ADMIN_ORIGIN=https://admin.matis-wostry.com
 - `ADMIN_PASSWORD_HASH` : sur ton poste, `pnpm --filter @portfolio-matis/api hash-password`, puis coller le résultat.
 - `SESSION_SECRET` : `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
 - Le fichier ne doit jamais être commité.
+- Pour changer de mot de passe, remplacer le hash puis exécuter `docker compose up -d` : toutes les sessions ouvertes sont fermées.
 
 Le conteneur doit partager un réseau Docker avec Caddy. S'il ne s'appelle pas `caddy`, ajouter à ce même `.env` :
 
@@ -59,7 +60,7 @@ Les quatre premiers portent le même nom que ceux du dépôt du site classique. 
 
 ## 5. Premier déploiement
 
-Lancer le workflow **Déploie l'API** depuis l'onglet Actions, puis vérifier :
+Lancer le workflow **Déploie l'API** depuis l'onglet Actions, sur la branche `main` (une autre branche est ignorée), puis vérifier :
 
 ```sh
 curl https://api.matis-wostry.com/health

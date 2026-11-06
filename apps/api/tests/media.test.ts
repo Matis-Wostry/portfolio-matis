@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import type { FastifyInstance } from 'fastify';
@@ -137,6 +137,14 @@ describe('lecture', () => {
 
   test('un fichier inconnu répond 404', async () => {
     expect((await read('00000000-0000-4000-8000-000000000000.png')).statusCode).toBe(404);
+  });
+
+  test('un média connu de la base mais disparu du disque répond 404, pas 500', async () => {
+    const { file } = (await upload('photo.png', PNG)).json();
+    rmSync(join(mediaDir, file));
+    const response = await read(file);
+    expect(response.statusCode).toBe(404);
+    expect(response.json().message).toContain(file);
   });
 });
 
