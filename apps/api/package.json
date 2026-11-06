@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --env-file=.env --watch src/server.ts",
     "start": "node src/server.ts",
-    "seed": "node --env-file=.env src/seed.ts",
+    "seed": "node --env-file-if-exists=.env src/seed.ts",
     "hash-password": "node src/hash-password.ts",
     "db:generate": "drizzle-kit generate",
     "test": "vitest run",

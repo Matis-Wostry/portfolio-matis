@@ -52,6 +52,9 @@ export const loadConfig = (env: Record<string, string | undefined> = process.env
     throw new Error(`Configuration invalide : ${details}`);
   }
   const { data } = parsed;
+  if (data.DEPLOY_SITES.length > 0 && !data.GITHUB_DISPATCH_TOKEN) {
+    throw new Error('Configuration invalide : GITHUB_DISPATCH_TOKEN est obligatoire quand DEPLOY_SITES contient des sites');
+  }
   return {
     databasePath: data.DATABASE_PATH,
     mediaDir: data.MEDIA_DIR,

@@ -35,7 +35,14 @@ describe('loadConfig', () => {
 
   test('lit la liste des sites à déployer', () => {
     const site = { name: 'classique', repo: 'Matis-Wostry/cv', workflow: 'deploy.yml', ref: 'main' };
-    expect(loadConfig({ ...env, DEPLOY_SITES: JSON.stringify([site]) }).deploySites).toEqual([site]);
+    const config = loadConfig({ ...env, DEPLOY_SITES: JSON.stringify([site]), GITHUB_DISPATCH_TOKEN: 'jeton' });
+    expect(config.deploySites).toEqual([site]);
+    expect(config.githubDispatchToken).toBe('jeton');
+  });
+
+  test('des sites sans jeton empêchent le démarrage plutôt que d’échouer à la publication', () => {
+    const site = { name: 'classique', repo: 'Matis-Wostry/cv', workflow: 'deploy.yml', ref: 'main' };
+    expect(() => loadConfig({ ...env, DEPLOY_SITES: JSON.stringify([site]) })).toThrow(/GITHUB_DISPATCH_TOKEN/);
   });
 
   test('une liste de sites illisible empêche le démarrage', () => {
