@@ -1,0 +1,22 @@
+# Dépendances et résultats de build
+node_modules/
+dist/
+
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+
+# Données locales : base, médias, contenu importé
+*.db
+*.db-shm
+*.db-wal
+/data/
+/import/
+
+# Journaux et fichiers d'éditeur ou de système
+*.log
+.DS_Store
+Thumbs.db
+/.vscode/
+/.idea/
