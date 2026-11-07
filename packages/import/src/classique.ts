@@ -25,14 +25,20 @@ export const readClassique = (html: string): ClassiqueFacts => {
     email: contactHrefs.find((href) => href.startsWith('mailto:'))?.replace('mailto:', '') ?? '',
     github: contactHrefs.find((href) => href.includes('github.com')) ?? '',
     availability: root.querySelectorAll('.availability-item').map((item) => clean(item.querySelectorAll('p').at(-1)?.text)),
-    experiences: root.querySelectorAll('.timeline-item').map((item) => ({
-      title: textOf(item, '.timeline-title'),
-      company: textOf(item, '.timeline-company'),
-      period: textOf(item, '.timeline-date'),
-      summary: textsOf(item, '.timeline-description p').join(' '),
-      missions: textsOf(item, '.timeline-description li'),
-      techs: textsOf(item, '.badge'),
-    })),
+    experiences: root.querySelectorAll('.timeline-item').map((item) => {
+      const paragraphs = textsOf(item, '.timeline-description p');
+      const items = textsOf(item, '.timeline-description li');
+      // Une liste de missions suit parfois un résumé ; sans liste, chaque paragraphe est une mission.
+      const missionsInParagraphs = items.length === 0 && paragraphs.length > 1;
+      return {
+        title: textOf(item, '.timeline-title'),
+        company: textOf(item, '.timeline-company'),
+        period: textOf(item, '.timeline-date'),
+        summary: missionsInParagraphs ? '' : paragraphs.join(' '),
+        missions: missionsInParagraphs ? paragraphs : items,
+        techs: textsOf(item, '.badge'),
+      };
+    }),
     projects: root.querySelectorAll('.project-item').map((item) => ({
       title: textOf(item, '.project-title'),
       summary: textOf(item, '.project-description'),

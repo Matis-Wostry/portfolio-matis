@@ -175,13 +175,48 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
   return [experience, ...jeu.experiences].map((e, position) => ({ ...e, position }));
 };
 
+/** Les sites WordPress de clients du freelance, que le jeu présente comme projets pro. Demande de Matis du 2026-11-08. */
+const FREELANCE_SUMMARY = 'Missions SEO pour Le MieuxDisant, et sites WordPress pour d’autres clients.';
+const FREELANCE_SITES = 'Création des sites WordPress de MB Ventilation et MB Home';
+
+type Experience = DraftContent['experiences'][number];
+
+/**
+ * Les expériences du jeu n'ont que leur titre : elles reprennent les missions et les technos du site classique,
+ * sans écraser ce que le jeu détaille déjà. Le freelance gagne aussi les sites faits pour d'autres clients.
+ */
+const withClassiqueMissions = (experiences: Experience[], classique: ClassiqueFacts): Experience[] => {
+  const fromClassique = (pattern: RegExp, exclude?: RegExp) =>
+    classique.experiences.find((e) => pattern.test(`${e.title} ${e.company}`) && !exclude?.test(`${e.title} ${e.company}`));
+  const fill = (experience: Experience, source: ClassiqueFacts['experiences'][number] | undefined): Experience => ({
+    ...experience,
+    summary: experience.summary ?? (source?.summary || null),
+    missions: experience.missions.length > 0 ? experience.missions : (source?.missions ?? []),
+    techs: experience.techs.length > 0 ? experience.techs : (source?.techs ?? []),
+  });
+  return experiences.map((experience) => {
+    if (experience.kind === 'freelance') {
+      const filled = fill(experience, fromClassique(/freelance/i));
+      if (experience.missions.length > 0) return filled;
+      return {
+        ...filled,
+        summary: filled.summary ?? FREELANCE_SUMMARY,
+        missions: [...filled.missions, FREELANCE_SITES],
+        techs: filled.techs.includes('WordPress') ? filled.techs : [...filled.techs, 'WordPress'],
+      };
+    }
+    if (/mieuxdisant/i.test(experience.company)) return fill(experience, fromClassique(/mieuxdisant/i, /freelance/i));
+    return experience;
+  });
+};
+
 /** Le contenu du jeu, complété par ce que Matis a choisi de reprendre du site classique. */
 export const buildProposal = (jeu: DraftContent, classique: ClassiqueFacts): { content: DraftContent; ecarts: Ecart[] } => ({
   content: draftContentSchema.parse({
     ...jeu,
     profile: { ...jeu.profile, about: ABOUT_TEXT, softSkills: [], workStyle: withAddedWorkStyle(jeu.profile.workStyle) },
     contact: { ...jeu.contact, email: CONTACT_EMAIL, links: withCodeLink(jeu.contact.links) },
-    experiences: withSmartInformatique(jeu, classique),
+    experiences: withClassiqueMissions(withSmartInformatique(jeu, classique), classique),
     educations: withClassiqueDetails(jeu, classique),
     projects: jeu.projects.map((p) => (p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p)),
   }),

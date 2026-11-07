@@ -109,8 +109,37 @@ describe('proposition', () => {
     expect(content.skillCategories[1]).toEqual({ id: 'donnees-api', title: 'Données & API', skills: ['SQL', 'MongoDB'], position: 1 });
   });
 
-  test('n’invente aucun texte absent des deux sites', () => {
-    expect(content.experiences.find((e) => e.id === 'le-mieuxdisant')).toMatchObject({ summary: null, missions: [], techs: [] });
+  test('l’alternance au MieuxDisant reprend les missions et les technos du site classique, en gardant le titre du jeu', () => {
+    expect(content.experiences.find((e) => e.id === 'le-mieuxdisant')).toMatchObject({
+      title: 'Intégrateur web',
+      missions: ['Refonte complète du site avec WordPress', 'Amélioration du référencement naturel'],
+      techs: ['WordPress', 'Figma'],
+    });
+  });
+
+  test('le freelance reprend les missions SEO du classique et ajoute les sites faits pour d’autres clients', () => {
+    const freelance = content.experiences.find((e) => e.id === 'freelance');
+    expect(freelance?.summary).toBe('Missions SEO pour Le MieuxDisant, et sites WordPress pour d’autres clients.');
+    expect(freelance?.missions).toEqual([
+      'Optimisation continue de sites web',
+      'Production de contenus optimisés SEO',
+      'Création des sites WordPress de MB Ventilation et MB Home',
+    ]);
+    expect(freelance?.techs).toEqual(['SEO', 'SEMrush', 'WordPress']);
+  });
+
+  test('une expérience du jeu déjà détaillée garde ses propres missions', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const detailed = jeu.experiences.map((e) => (e.id === 'le-mieuxdisant' ? { ...e, missions: ['Mission du jeu'], techs: ['Vue.js'] } : e));
+    const mieuxDisant = buildProposal({ ...jeu, experiences: detailed }, classique).content.experiences.find((e) => e.id === 'le-mieuxdisant');
+    expect(mieuxDisant).toMatchObject({ missions: ['Mission du jeu'], techs: ['Vue.js'] });
+  });
+
+  test('sur le site classique, des paragraphes sans liste sont des missions, pas un résumé', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    expect(classique.experiences[0]).toMatchObject({ summary: '', missions: ['Optimisation continue de sites web', 'Production de contenus optimisés SEO'] });
+    expect(classique.experiences[2]).toMatchObject({ summary: 'Stage de 8 semaines' });
   });
 
   test('reprend le stage Smart Informatique du classique, avec ses missions et ses technos', () => {
