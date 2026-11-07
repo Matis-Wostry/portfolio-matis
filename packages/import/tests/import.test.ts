@@ -135,8 +135,22 @@ describe('proposition', () => {
     );
   });
 
-  test('reprend les savoir-être du classique', () => {
-    expect(content.profile.softSkills).toEqual(['Autonomie', 'Patient']);
+  test('les savoir-être deviennent des façons de travailler, chacune avec sa phrase, sans doublon', () => {
+    expect(content.profile.softSkills).toEqual([]);
+    const qualities = content.profile.workStyle.map((w) => w.quality);
+    expect(qualities.slice(-6)).toEqual(['Adaptable', 'Esprit d’analyse', 'Patient', 'Rigoureux', 'Esprit d’équipe', 'Réactif']);
+    expect(new Set(qualities).size).toBe(qualities.length);
+    expect(content.profile.workStyle.find((w) => w.quality === 'Patient')?.proof).toBe(
+      'Les échecs comme les bugs tenaces m’ont appris à chercher calmement plutôt qu’à forcer.',
+    );
+  });
+
+  test('une qualité déjà présente dans le jeu n’est pas ajoutée une seconde fois', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const withPatient = { ...jeu, profile: { ...jeu.profile, workStyle: [...jeu.profile.workStyle, { quality: 'Patient', proof: 'Déjà là.' }] } };
+    const { workStyle } = buildProposal(withPatient, classique).content.profile;
+    expect(workStyle.filter((w) => w.quality === 'Patient')).toEqual([{ quality: 'Patient', proof: 'Déjà là.' }]);
   });
 
   test('la carte « La Chambre du Dev » a un texte neutre, valable sur les deux sites', () => {
