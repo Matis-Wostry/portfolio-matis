@@ -57,7 +57,7 @@ describe('proposition', () => {
     expect(content.experiences).toEqual([
       expect.objectContaining({ id: 'smart-informatique', kind: 'stage', position: 0 }),
       expect.objectContaining({ id: 'le-mieuxdisant', title: 'Intégrateur web', company: 'Le MieuxDisant', start: '2024', end: '2025', position: 1 }),
-      expect.objectContaining({ id: 'freelance', title: 'Développeur et SEO', company: 'Freelance – Le MieuxDisant', kind: 'freelance', start: '2025', end: '2027', position: 2 }),
+      expect.objectContaining({ id: 'freelance', title: 'Développeur et SEO', company: 'Le MieuxDisant (freelance)', kind: 'freelance', start: '2025', end: '2027', position: 2 }),
     ]);
   });
 
@@ -119,7 +119,7 @@ describe('proposition', () => {
 
   test('le freelance, pour Le MieuxDisant, reprend les missions SEO du classique et ajoute les sites créés', () => {
     const freelance = content.experiences.find((e) => e.id === 'freelance');
-    expect(freelance?.company).toBe('Freelance – Le MieuxDisant');
+    expect(freelance?.company).toBe('Le MieuxDisant (freelance)');
     expect(freelance?.summary).toBe('Missions SEO et création de sites WordPress pour Le MieuxDisant.');
     expect(freelance?.missions).toEqual([
       'Optimisation continue de sites web',
@@ -128,8 +128,23 @@ describe('proposition', () => {
     ]);
   });
 
-  test('SE Ranking remplace SEMrush dans les technos du freelance', () => {
-    expect(content.experiences.find((e) => e.id === 'freelance')?.techs).toEqual(['SEO', 'SE Ranking', 'WordPress']);
+  test('aucun titre ni entreprise ne garde de tiret séparateur', () => {
+    const labels = content.experiences.flatMap((e) => [e.title, e.company]);
+    expect(labels.filter((label) => /\s[–—-]\s/.test(label))).toEqual([]);
+  });
+
+  test('SE Ranking remplace SEMrush partout, sans doublon', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const seo = { id: 'seo', title: 'SEO', skills: ['SEMrush', 'SE Ranking', 'Hotjar'], position: 9 };
+    const projects = jeu.projects.map((p, i) => (i === 0 ? { ...p, techs: [...p.techs, 'SEMrush'] } : p));
+    const proposal = buildProposal({ ...jeu, projects, skillCategories: [...jeu.skillCategories, seo] }, classique).content;
+    expect(JSON.stringify(proposal)).not.toContain('SEMrush');
+    expect(proposal.skillCategories.find((c) => c.id === 'seo')?.skills).toEqual(['SE Ranking', 'Hotjar']);
+    expect(proposal.projects[0]?.techs).toContain('SE Ranking');
+  });
+
+  test('SE Ranking remplace SEMrush dans les technos du freelance', () => {    expect(content.experiences.find((e) => e.id === 'freelance')?.techs).toEqual(['SEO', 'SE Ranking', 'WordPress']);
   });
 
   test('l’alternance chez Octoplus décrit la création d’un SaaS, sans technos inventées', async () => {
@@ -165,7 +180,7 @@ describe('proposition', () => {
   test('reprend le stage Smart Informatique du classique, avec ses missions et ses technos', () => {
     expect(content.experiences[0]).toEqual({
       id: 'smart-informatique',
-      title: 'Stage – Développeur web',
+      title: 'Développeur web',
       company: 'Smart Informatique',
       kind: 'stage',
       start: '2024',

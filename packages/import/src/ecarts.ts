@@ -162,7 +162,8 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
   if (!stage) return jeu.experiences;
   const experience = {
     id: slugify(stage.company),
-    title: stage.title,
+    // Pas de tiret séparateur dans les textes (demande de Matis du 2026-11-08) : le résumé dit déjà qu'il s'agit d'un stage.
+    title: stage.title.replace(/^Stage\s*[–—-]\s*/i, ''),
     company: stage.company,
     kind: 'stage' as const,
     ...parsePeriod(stage.period),
@@ -179,10 +180,13 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
  * Le freelance a un seul commanditaire, Le MieuxDisant, pour le SEO comme pour les sites (dont MB Ventilation et MB Home,
  * projets pro du jeu). Matis utilise SE Ranking, pas SEMrush. Précisions de Matis du 2026-11-08.
  */
-const FREELANCE_COMPANY = 'Freelance – Le MieuxDisant';
+const FREELANCE_COMPANY = 'Le MieuxDisant (freelance)';
 const FREELANCE_SUMMARY = 'Missions SEO et création de sites WordPress pour Le MieuxDisant.';
 const FREELANCE_SITES = 'Création de sites WordPress pour Le MieuxDisant, dont MB Ventilation et MB Home';
 const TECH_RENAMES: Record<string, string> = { SEMrush: 'SE Ranking' };
+
+/** Remplace les technos renommées, partout, sans laisser de doublon. */
+const renamed = (techs: string[]): string[] => [...new Set(techs.map((tech) => TECH_RENAMES[tech] ?? tech))];
 
 /** L'alternance chez Octoplus, décrite par Matis le 2026-11-08 : du développement full-stack, la création d'un SaaS. */
 const OCTOPLUS_DETAILS = {
@@ -213,7 +217,7 @@ const withClassiqueMissions = (experiences: Experience[], classique: ClassiqueFa
     if (experience.kind === 'freelance') {
       const filled = fill(experience, fromClassique(/freelance/i));
       if (experience.missions.length > 0) return filled;
-      const techs = filled.techs.map((tech) => TECH_RENAMES[tech] ?? tech);
+      const { techs } = filled;
       return {
         ...filled,
         company: FREELANCE_COMPANY,
@@ -236,9 +240,10 @@ export const buildProposal = (jeu: DraftContent, classique: ClassiqueFacts): { c
     ...jeu,
     profile: { ...jeu.profile, about: ABOUT_TEXT, softSkills: [], workStyle: withAddedWorkStyle(jeu.profile.workStyle) },
     contact: { ...jeu.contact, email: CONTACT_EMAIL, links: withCodeLink(jeu.contact.links) },
-    experiences: withClassiqueMissions(withSmartInformatique(jeu, classique), classique),
+    experiences: withClassiqueMissions(withSmartInformatique(jeu, classique), classique).map((e) => ({ ...e, techs: renamed(e.techs) })),
     educations: withClassiqueDetails(jeu, classique),
-    projects: jeu.projects.map((p) => (p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p)),
+    projects: jeu.projects.map((p) => ({ ...(p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p), techs: renamed(p.techs) })),
+    skillCategories: jeu.skillCategories.map((c) => ({ ...c, skills: renamed(c.skills) })),
   }),
   ecarts: buildEcarts(jeu, classique),
 });
