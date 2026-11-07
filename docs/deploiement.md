@@ -1,6 +1,6 @@
-# Déploiement de l'API
+# Déploiement de l'API et de l'interface
 
-Ce qu'il reste à faire sur le serveur pour mettre l'API en ligne. Aucune de ces étapes ne touche aux sites existants.
+Ce qu'il reste à faire sur le serveur pour mettre l'API et l'interface en ligne. Aucune de ces étapes ne touche aux sites existants.
 
 > **Pas encore de sauvegardes.** Tant qu'elles n'existent pas, les brouillons et les médias ne sont que sur le serveur. Seul le dernier contenu publié aura une copie, dans le dépôt du site, une fois celui-ci branché. À sauvegarder : le fichier `data.db` et le dossier `media/`, tous deux dans le volume Docker `portfolio_matis_data`.
 
@@ -9,7 +9,7 @@ Ce qu'il reste à faire sur le serveur pour mettre l'API en ligne. Aucune de ces
 Créer une entrée pointant vers le serveur :
 
 - `api.matis-wostry.com`
-- `admin.matis-wostry.com` (pour l'interface, quand elle existera)
+- `admin.matis-wostry.com`
 
 ## 2. Dossier et configuration
 
@@ -38,7 +38,15 @@ CADDY_NETWORK=nom-du-reseau
 api.matis-wostry.com {
 	reverse_proxy portfolio-matis-api:3000
 }
+
+admin.matis-wostry.com {
+	root * /chemin/vu/par/caddy/portfolio-admin
+	try_files {path} /index.html
+	file_server
+}
 ```
+
+Remplacer le chemin par le dossier de l'interface, tel que le conteneur Caddy le voit. La ligne `try_files` permet de recharger une page comme `/projets/pokedex`.
 
 Puis recharger Caddy : `docker exec caddy caddy reload --config /etc/caddy/Caddyfile`.
 
@@ -55,18 +63,19 @@ Dans le dépôt `Matis-Wostry/portfolio-matis`, ajouter :
 | `SSH_PORT` | port SSH |
 | `SSH_LOGIN` | `utilisateur@serveur` |
 | `API_DIR` | le dossier de l'étape 2 |
+| `ADMIN_SSH_TARGET` | `utilisateur@serveur:/chemin/portfolio-admin/`, le dossier de l'interface sur le serveur |
 
 Les quatre premiers portent le même nom que ceux du dépôt du site classique. L'image est publique, le serveur n'a pas besoin de se connecter au registre, à condition de rendre le paquet public dans GitHub après le premier envoi.
 
 ## 5. Premier déploiement
 
-Lancer le workflow **Déploie l'API** depuis l'onglet Actions, sur la branche `main` (une autre branche est ignorée), puis vérifier :
+Lancer le workflow **Déploie l'API et l'interface** depuis l'onglet Actions, sur la branche `main` (une autre branche est ignorée), puis vérifier :
 
 ```sh
 curl https://api.matis-wostry.com/health
 ```
 
-La réponse attendue est `{"ok":true}`, et la documentation s'ouvre sur `https://api.matis-wostry.com/docs`.
+La réponse attendue est `{"ok":true}`, la documentation s'ouvre sur `https://api.matis-wostry.com/docs`, et l'interface sur `https://admin.matis-wostry.com`.
 
 ## 6. Reprise du contenu
 

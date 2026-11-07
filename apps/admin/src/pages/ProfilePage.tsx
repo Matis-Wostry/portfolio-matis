@@ -76,7 +76,7 @@ const Form = ({ initial }: { initial: Values }) => {
               return (
                 <div className="row" key={index}>
                   <TextField label={`Qualité ${index + 1}`} value={item.quality} error={errorFor(`workStyle.${index}.quality`)} onChange={(quality) => update({ quality })} />
-                  <TextField label={`Preuve ${index + 1}`} value={item.proof} error={errorFor(`workStyle.${index}.proof`)} onChange={(proof) => update({ proof })} />
+                  <TextField label={`Preuve ${index + 1}`} rows={3} value={item.proof} error={errorFor(`workStyle.${index}.proof`)} onChange={(proof) => update({ proof })} />
                   <button type="button" className="btn small" aria-label={`Retirer la façon de travailler ${index + 1}`} onClick={() => setField('workStyle', values.workStyle.filter((_, i) => i !== index))}>Retirer</button>
                 </div>
               );
@@ -95,6 +95,7 @@ const Form = ({ initial }: { initial: Values }) => {
               <div className="row single" key={index}>
                 <TextField
                   label={`Loisir ${index + 1}`}
+                  hideLabel
                   value={hobby.label}
                   error={errorFor(`hobbies.${index}.label`)}
                   onChange={(label) => setField('hobbies', values.hobbies.map((current, i) => (i === index ? { ...current, label } : current)))}

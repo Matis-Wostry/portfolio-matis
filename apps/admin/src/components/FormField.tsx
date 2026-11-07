@@ -15,9 +15,16 @@ type TextProps = Common & {
   readOnly?: boolean;
   /** Une zone de plusieurs lignes, de cette hauteur. */
   rows?: number;
+  /** Le libellé reste lu par les lecteurs d'écran, sans s'afficher : le titre de la liste suffit à l'œil. */
+  hideLabel?: boolean;
 };
 
-export const TextField = ({ label, value, onChange, error, hint, readOnly, rows }: TextProps) => {
+const textareaClass = (rows: number): string | undefined => {
+  if (rows <= 2) return 'compact';
+  return rows < 8 ? 'short' : undefined;
+};
+
+export const TextField = ({ label, value, onChange, error, hint, readOnly, rows, hideLabel }: TextProps) => {
   const id = useId();
   const errorId = `${id}-error`;
   const shared = {
@@ -29,9 +36,9 @@ export const TextField = ({ label, value, onChange, error, hint, readOnly, rows 
   } as const;
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : undefined}>{label}</label>
       {rows ? (
-        <textarea {...shared} rows={rows} className={rows < 8 ? 'short' : undefined} onChange={(event) => onChange(event.target.value)} />
+        <textarea {...shared} rows={rows} className={textareaClass(rows)} onChange={(event) => onChange(event.target.value)} />
       ) : (
         <input {...shared} type="text" onChange={(event) => onChange(event.target.value)} />
       )}

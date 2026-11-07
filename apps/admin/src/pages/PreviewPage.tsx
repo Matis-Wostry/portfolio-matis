@@ -39,7 +39,7 @@ const ProjectCard = ({ project }: { project: Project }) => (
     <Text label="Le contexte" value={project.context} />
     <Text label="Ce que j’ai fait" value={project.work} />
     <Text label="Le résultat" value={project.result} />
-    <Bullets label="Technos" items={project.techs} />
+    <Text label="Technos" value={project.techs.join(', ')} />
     <Bullets label="Liens" items={project.links.map((link) => `${link.label} : ${link.href}`)} />
     {project.captures.map((capture) => (
       <img key={capture.file} src={mediaUrl(capture.file)} alt={capture.alt} />
@@ -81,7 +81,7 @@ const Preview = ({ draft }: { draft: DraftState }) => {
               <p>{period(experience.start, experience.end)}</p>
               {experience.summary && <p>{experience.summary}</p>}
               <Bullets items={experience.missions} />
-              <Bullets label="Technos" items={experience.techs} />
+              <Text label="Technos" value={experience.techs.join(', ')} />
             </article>
           ))}
         </Section>

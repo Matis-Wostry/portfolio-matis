@@ -17,6 +17,8 @@ export const ListField = ({ label, path, values, onChange, errorFor }: Props) =>
         <div className="row single" key={index}>
           <TextField
             label={`${label} ${index + 1}`}
+            hideLabel
+            rows={2}
             value={value}
             error={errorFor(`${path}.${index}`)}
             onChange={(next) => onChange(values.map((current, i) => (i === index ? next : current)))}
