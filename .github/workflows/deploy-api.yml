@@ -1,0 +1,48 @@
+name: Déploie l'API
+
+# Lancement à la main seulement, tant que le serveur n'est pas préparé (voir docs/deploiement.md).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/matis-wostry/portfolio-matis-api
+
+jobs:
+  deploy:
+    # Seul main peut partir en production, quelle que soit la branche choisie dans l'onglet Actions.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connexion au registre d'images
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Construit et publie l'image
+        run: |
+          docker build -f docker/api.Dockerfile -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" .
+          docker push --all-tags "$IMAGE"
+
+      - name: Prépare SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Ajoute la clé du serveur
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+
+      - name: Envoie la configuration Docker
+        run: scp -P "${{ secrets.SSH_PORT }}" docker-compose.prod.yml "${{ secrets.SSH_LOGIN }}:${{ secrets.API_DIR }}/docker-compose.yml"
+
+      - name: Met à jour le conteneur
+        run: ssh -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_LOGIN }}" "cd '${{ secrets.API_DIR }}' && docker compose pull && docker compose up -d"

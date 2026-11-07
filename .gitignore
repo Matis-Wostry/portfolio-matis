@@ -12,10 +12,12 @@ dist/
 *.db-shm
 *.db-wal
 /data/
+/apps/api/data/
 /import/
 
 # Journaux et fichiers d'éditeur ou de système
 *.log
+cookies.txt
 .DS_Store
 Thumbs.db
 /.vscode/
