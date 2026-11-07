@@ -19,7 +19,7 @@ const withoutId = ({ id: _id, ...rest }: ReturnType<typeof projectInput>) => res
 
 describe('projets', () => {
   test('cycle complet, listes JSON comprises', async () => {
-    const input = projectInput({ captures: [{ file: 'a.png', alt: 'Accueil' }] });
+    const input = projectInput({ captures: [{ file: '0f8fad5b-d9cb-469f-a165-70867728950e.png', alt: 'Accueil' }] });
 
     const created = await call('POST', '/admin/projects', input);
     expect(created.statusCode).toBe(201);

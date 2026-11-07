@@ -24,6 +24,10 @@ describe('loadConfig', () => {
     },
   );
 
+  test('un hash copié sans son début « scrypt: » le dit clairement', () => {
+    expect(() => loadConfig({ ...env, ADMIN_PASSWORD_HASH: env.ADMIN_PASSWORD_HASH.replace('scrypt:', '') })).toThrow(/scrypt:/);
+  });
+
   test.each(['https://admin.matis-wostry.com/', 'https://admin.matis-wostry.com/page'])(
     'l’origine %s est ramenée à ce que le navigateur envoie',
     (origin) => {

@@ -3,7 +3,9 @@ import {
   createInput,
   draftContentSchema,
   experienceSchema,
+  mediaFileNameSchema,
   periodSchema,
+  profileSchema,
   projectSchema,
   safeHrefSchema,
   slugSchema,
@@ -93,6 +95,42 @@ describe('entrées de création et de modification', () => {
   test('la modification refuse d’emblée un identifiant', () => {
     expect(updateInput(projectSchema).shape).not.toHaveProperty('id');
     expect(updateInput(projectSchema).shape).not.toHaveProperty('position');
+  });
+});
+
+describe('noms de médias', () => {
+  const FILE = '0f8fad5b-d9cb-469f-a165-70867728950e.png';
+
+  test.each([FILE, '0f8fad5b-d9cb-469f-a165-70867728950e.pdf', '0f8fad5b-d9cb-469f-a165-70867728950e.webp'])('accepte %s', (file) => {
+    expect(mediaFileNameSchema.safeParse(file).success).toBe(true);
+  });
+
+  test.each(['../../etc/passwd', 'a.png', `${FILE}.exe`, FILE.toUpperCase()])('refuse %s', (file) => {
+    expect(mediaFileNameSchema.safeParse(file).success).toBe(false);
+  });
+
+  test('une capture ou un CV dont le nom n’est pas celui donné par le serveur est refusé à la saisie', () => {
+    expect(projectSchema.safeParse({ ...minimalProject, captures: [{ file: '../x.png', alt: 'X' }] }).success).toBe(false);
+    const { profile } = content();
+    expect(profileSchema.safeParse({ ...profile, cvFile: 'cv.pdf' }).success).toBe(false);
+    expect(profileSchema.safeParse({ ...profile, cvFile: '0f8fad5b-d9cb-469f-a165-70867728950e.pdf' }).success).toBe(true);
+  });
+});
+
+describe('identifiants en double', () => {
+  test('deux projets au même identifiant sont refusés, en nommant la liste et l’identifiant', () => {
+    const base = content();
+    const result = draftContentSchema.safeParse({ ...base, projects: [...base.projects, { ...base.projects[0], position: 1 }] });
+    expect(result.success).toBe(false);
+    const issue = result.error?.issues[0];
+    expect(issue?.path).toEqual(['projects', 1, 'id']);
+    expect(issue?.message).toContain('pokedex');
+  });
+
+  test('le même identifiant dans deux listes différentes reste permis', () => {
+    const base = content();
+    const experiences = [{ id: 'pokedex', title: 'T', company: 'C', kind: 'pro', start: '2024', end: null, summary: null, missions: [], techs: [], position: 0 }];
+    expect(draftContentSchema.safeParse({ ...base, experiences }).success).toBe(true);
   });
 });
 

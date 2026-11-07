@@ -7,7 +7,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { fileTypeFromBuffer } from 'file-type';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { collectMediaFiles } from '@portfolio-matis/content';
+import { collectMediaFiles, mediaFileNameSchema } from '@portfolio-matis/content';
 import { media } from '../db/schema.ts';
 import { latestSnapshot } from '../db/snapshots.ts';
 
@@ -25,9 +25,7 @@ const EXTENSIONS: Record<string, string> = {
 const TOO_LARGE = { message: 'Fichier trop lourd : 5 Mo au plus pour une image, 10 Mo pour un PDF' };
 const WRONG_TYPE = { message: 'Type de fichier refusé : PNG, JPEG, WebP ou PDF seulement' };
 
-export const mediaFileParams = z.object({
-  file: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpg|webp|pdf)$/, 'Nom de fichier invalide'),
-});
+export const mediaFileParams = z.object({ file: mediaFileNameSchema });
 
 /** Envoie un média connu de la base ; le nom a déjà été validé par `mediaFileParams`. */
 export const sendMedia = async (app: FastifyInstance, reply: FastifyReply, file: string): Promise<FastifyReply> => {
@@ -84,7 +82,13 @@ export const mediaRoutes = async (base: FastifyInstance): Promise<void> => {
         createdAt: new Date().toISOString(),
       };
       await writeFile(join(mediaDir, row.file), content);
-      base.db.insert(media).values(row).run();
+      try {
+        base.db.insert(media).values(row).run();
+      } catch (error) {
+        // Un fichier sans ligne en base serait invisible et jamais supprimé.
+        await rm(join(mediaDir, row.file), { force: true });
+        throw error;
+      }
       return reply.code(201).send(row);
     },
   );
@@ -112,8 +116,9 @@ export const mediaRoutes = async (base: FastifyInstance): Promise<void> => {
         return reply.code(409).send({ message: 'Ce média est encore utilisé par le brouillon ou par la dernière publication' });
       }
 
-      base.db.delete(media).where(eq(media.file, file)).run();
+      // Le fichier d'abord : si sa suppression échoue, la ligne reste et le média reste visible.
       await rm(join(mediaDir, file), { force: true });
+      base.db.delete(media).where(eq(media.file, file)).run();
       return reply.code(204).send();
     },
   );

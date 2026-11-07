@@ -25,6 +25,11 @@ export const safeHrefSchema = requiredText.refine(hasSafeProtocol, 'Lien refusé
 
 export const periodSchema = z.string().regex(/^\d{4}(-(0[1-9]|1[0-2]))?$/, 'Période invalide : AAAA ou AAAA-MM');
 
+/** Le nom qu'un média reçoit du serveur à l'envoi : rien d'autre ne peut désigner un fichier. */
+export const mediaFileNameSchema = z
+  .string()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpg|webp|pdf)$/, 'Fichier inconnu : envoyez-le depuis l’interface');
+
 const linkSchema = z.object({ label: requiredText, href: safeHrefSchema });
 const linkList = z.array(linkSchema).default([]);
 
@@ -45,7 +50,7 @@ export const profileSchema = z.object({
   workStyle: z.array(z.object({ quality: requiredText, proof: requiredText })).default([]),
   softSkills: textList,
   hobbies: z.array(z.object({ id: slugSchema, label: requiredText })).default([]),
-  cvFile: optionalText,
+  cvFile: mediaFileNameSchema.nullable().default(null),
 });
 
 export const contactSchema = z.object({
@@ -97,7 +102,7 @@ export const projectSchema = z.object({
   result: optionalText,
   techs: textList,
   links: linkList,
-  captures: z.array(z.object({ file: requiredText, alt: requiredText })).default([]),
+  captures: z.array(z.object({ file: mediaFileNameSchema, alt: requiredText })).default([]),
   hidden: z.boolean().default(false),
   position,
 });
@@ -109,12 +114,22 @@ export const skillCategorySchema = z.object({
   position,
 });
 
+/** Une liste dont chaque identifiant n'apparaît qu'une fois : sinon, la reprise échouerait plus loin, sans dire où. */
+const uniqueList = <S extends z.ZodType<{ id: string }>>(schema: S) =>
+  z.array(schema).superRefine((rows, ctx) => {
+    const seen = new Set<string>();
+    rows.forEach((row, index) => {
+      if (seen.has(row.id)) ctx.addIssue({ code: 'custom', path: [index, 'id'], message: `L’identifiant « ${row.id} » apparaît deux fois` });
+      seen.add(row.id);
+    });
+  });
+
 const lists = {
-  experiences: z.array(experienceSchema),
-  educations: z.array(educationSchema),
-  projectCategories: z.array(projectCategorySchema),
-  projects: z.array(projectSchema),
-  skillCategories: z.array(skillCategorySchema),
+  experiences: uniqueList(experienceSchema),
+  educations: uniqueList(educationSchema),
+  projectCategories: uniqueList(projectCategorySchema),
+  projects: uniqueList(projectSchema),
+  skillCategories: uniqueList(skillCategorySchema),
 };
 
 export const draftStateSchema = z.object({
