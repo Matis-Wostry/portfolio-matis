@@ -134,7 +134,19 @@ describe('proposition', () => {
     expect(content.profile.softSkills).toEqual(['Autonomie', 'Patient']);
   });
 
-  test('ne reprend ni le projet ni les compétences qui restent à arbitrer', () => {
+  test('la carte « La Chambre du Dev » a un texte neutre, valable sur les deux sites', () => {
+    const summary = content.projects.find((p) => p.id === 'chambre-du-dev')?.summary;
+    expect(summary).toBe('Mon portfolio sous forme de jeu : une chambre en pixel art à explorer, avec un moteur d’échecs, des sons synthétisés et un terminal.');
+  });
+
+  test('l’ancien texte de la carte et le nouveau restent en trace dans les écarts', () => {
+    expect(ecart('chambre-du-dev').jeu).toBe('Ce portfolio : une chambre en pixel art.');
+    expect(ecart('chambre-du-dev').classique).toContain('Mon portfolio sous forme de jeu');
+  });
+
+  test('ne reprend ni le projet ni les compétences, gardés en trace dans les écarts', () => {
+    expect(ecart('creation-portfolio').classique).toContain('Création de mon portfolio');
+    expect(ecart('competences').classique).toContain('MyPoseo');
     expect(content.projects.map((p) => p.title)).not.toContain('Création de mon portfolio');
     expect(content.skillCategories.flatMap((c) => c.skills)).not.toContain('MyPoseo');
   });

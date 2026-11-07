@@ -6,6 +6,10 @@ export type Ecart = { subject: string; label: string; jeu: string; classique: st
 
 const ABSENT = 'Absent';
 
+const CHAMBRE_DU_DEV_ID = 'chambre-du-dev';
+const CHAMBRE_DU_DEV_SUMMARY =
+  'Mon portfolio sous forme de jeu : une chambre en pixel art à explorer, avec un moteur d’échecs, des sons synthétisés et un terminal.';
+
 const normalizeHref = (href: string): string => href.trim().replace(/\/+$/, '').toLowerCase();
 
 const orAbsent = (values: string[]): string => (values.length ? values.join(' ; ') : ABSENT);
@@ -31,7 +35,7 @@ export const buildEcarts = (jeu: DraftContent, classique: ClassiqueFacts): Ecart
 
   const portfolioCard = classique.projects.find((p) => /portfolio/i.test(p.title));
   const github = jeu.contact.links.find((l) => l.href.includes('github.com'))?.href ?? ABSENT;
-  const chambre = jeu.projects.find((p) => p.id === 'chambre-du-dev');
+  const chambre = jeu.projects.find((p) => p.id === CHAMBRE_DU_DEV_ID);
 
   const { search } = jeu.profile;
 
@@ -99,10 +103,10 @@ export const buildEcarts = (jeu: DraftContent, classique: ClassiqueFacts): Ecart
       classique: portfolioCard ? `${portfolioCard.title} : ${portfolioCard.summary}` : ABSENT,
     },
     {
-      subject: 'chambre-du-dev',
-      label: 'Carte « La Chambre du Dev », à reformuler de façon neutre',
+      subject: CHAMBRE_DU_DEV_ID,
+      label: 'Carte « La Chambre du Dev », reformulée de façon neutre',
       jeu: chambre?.summary ?? ABSENT,
-      classique: ABSENT,
+      classique: `${ABSENT} ; texte retenu pour les deux sites : ${CHAMBRE_DU_DEV_SUMMARY}`,
     },
     {
       subject: 'savoir-etre',
@@ -150,6 +154,7 @@ export const buildProposal = (jeu: DraftContent, classique: ClassiqueFacts): { c
     profile: { ...jeu.profile, about: classique.about || null, softSkills: classique.softSkills },
     experiences: withSmartInformatique(jeu, classique),
     educations: withClassiqueDetails(jeu, classique),
+    projects: jeu.projects.map((p) => (p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p)),
   }),
   ecarts: buildEcarts(jeu, classique),
 });
@@ -158,7 +163,7 @@ export const renderEcarts = (ecarts: Ecart[]): string => {
   const sections = ecarts.map((e) => `## ${e.label}\n\n- **Jeu :** ${e.jeu}\n- **Site classique :** ${e.classique}\n`);
   return [
     '# Écarts entre les deux sites\n',
-    'La proposition reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations, le texte « À propos » et les savoir-être du site classique. Les valeurs du jeu priment pour le reste. À relire avant toute publication.\n',
+    'La proposition reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations, le texte « À propos » et les savoir-être du site classique. Les valeurs du jeu priment pour le reste. Ce qui n’est pas repris reste ici comme trace, notamment les compétences absentes du jeu et « Création de mon portfolio ». À relire avant toute publication.\n',
     ...sections,
   ].join('\n');
 };
