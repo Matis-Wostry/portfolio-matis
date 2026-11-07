@@ -93,7 +93,7 @@ describe('proposition', () => {
   });
 
   test('le lien GitHub devient le lien « Mes dépôts Git » vers le Forgejo de Matis, à la même place', () => {
-    expect(content.contact.links).toEqual([{ label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com' }]);
+    expect(content.contact.links).toEqual([{ label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com/matis' }]);
   });
 
   test('sans lien GitHub dans le jeu, le lien vers le Forgejo est ajouté en dernier', async () => {
@@ -101,7 +101,7 @@ describe('proposition', () => {
     const jeu = await readJeu(join(fixtures, 'jeu'));
     const linkedIn = { label: 'LinkedIn', href: 'https://www.linkedin.com/in/matis-wostry/' };
     const { links } = buildProposal({ ...jeu, contact: { ...jeu.contact, links: [linkedIn] } }, classique).content.contact;
-    expect(links).toEqual([linkedIn, { label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com' }]);
+    expect(links).toEqual([linkedIn, { label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com/matis' }]);
   });
 
   test('donne des identifiants stables aux loisirs et aux compétences, sans leur présentation', () => {
