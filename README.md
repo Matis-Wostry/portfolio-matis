@@ -33,6 +33,7 @@ Une panne de l'API ne peut donc pas casser un site en ligne : au pire, un déplo
 |---|---|
 | `packages/content` | Schéma du contenu et règles de publication, partagés |
 | `packages/import` | Reprise du contenu des deux sites et trace de leurs différences |
+| `packages/site-classique` | Génération du site classique depuis le dernier contenu publié |
 | `apps/api` | L'API : brouillon, médias, connexion, publication, lecture publique |
 | `apps/admin` | L'interface d'administration |
 
@@ -63,6 +64,16 @@ pnpm dev:admin
 L'interface s'ouvre sur <http://localhost:5173>, et la documentation de l'API sur <http://localhost:3000/docs>. Cette documentation sert à découvrir les routes et leurs schémas : ses boutons d'essai répondent 403 sur les écritures, qui n'acceptent que l'origine de l'interface.
 
 `pnpm import:jeu` suppose que les dépôts `jeu` et `classique` sont à côté de celui-ci. Il écrit dans `import/`, ignoré par Git : `proposition.json` reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations et les savoir-être du site classique, avec un texte « À propos » et une carte « La Chambre du Dev » réécrits pour valoir sur les deux sites. `ecarts.md` garde la trace de ce qui diffère entre les deux sites.
+
+## Générer le site classique
+
+Le site classique reste statique : à son déploiement, le générateur lit le dernier contenu publié et remplit les sections de son `index.html`, entre les marqueurs `<!-- content:x -->`. Pour l'essayer en local, avec le dépôt `classique` à côté de celui-ci et après avoir cliqué sur Publier :
+
+```sh
+node packages/site-classique/src/cli.ts --site ../classique --api http://localhost:3000 --out ../classique/dist
+```
+
+Sans API, `--snapshot ../classique/content/snapshot.json` remplace `--api`. Le site généré est dans `dist/`, la seule partie envoyée sur le serveur. Si l'API est injoignable, si le contenu est invalide ou si un média manque, rien n'est écrit.
 
 ## L'interface
 
