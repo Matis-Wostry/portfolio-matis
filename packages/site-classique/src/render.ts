@@ -156,9 +156,12 @@ const renderProject = (project: Project): Lines => {
   );
 };
 
+const tabId = (category: ProjectCategory): string => `onglet-${category.id}`;
+const panelId = (category: ProjectCategory): string => `projets-${category.id}`;
+
 const renderCategory = (category: ProjectCategory, projects: Project[]): Lines =>
   block(
-    '<div class="project-category">',
+    `<div class="project-category" role="tabpanel" id="${panelId(category)}" aria-labelledby="${tabId(category)}">`,
     [
       `<h3 class="project-category-title">${esc(category.title)}</h3>`,
       `<p class="project-category-description">${esc(category.description)}</p>`,
@@ -167,11 +170,31 @@ const renderCategory = (category: ProjectCategory, projects: Project[]): Lines =
     '</div>',
   );
 
-const renderProjects = ({ projectCategories, projects }: Content): Lines =>
-  projectCategories.flatMap((category) => {
-    const inCategory = projects.filter((project) => project.categoryId === category.id);
-    return inCategory.length > 0 ? renderCategory(category, inCategory) : [];
-  });
+/**
+ * Un onglet par catégorie, puis les catégories en panneaux. Tout est dans le HTML : sans script, les catégories
+ * restent les unes sous les autres ; le script du site affiche les onglets et une seule catégorie à la fois.
+ */
+const renderProjects = ({ projectCategories, projects }: Content): Lines => {
+  const groups = projectCategories
+    .map((category) => ({ category, projects: projects.filter((project) => project.categoryId === category.id) }))
+    .filter((group) => group.projects.length > 0);
+  if (groups.length === 0) return [];
+  return block(
+    '<div class="project-browser" data-project-tabs>',
+    [
+      ...block(
+        '<div class="project-tabs" role="tablist" aria-label="Catégories de projets">',
+        groups.map(
+          ({ category, projects: inCategory }) =>
+            `<button type="button" class="project-tab" role="tab" id="${tabId(category)}" aria-controls="${panelId(category)}">${esc(category.title)} <span class="project-tab-count">${inCategory.length}</span></button>`,
+        ),
+        '</div>',
+      ),
+      ...block('<div class="project-panels">', groups.flatMap((group) => renderCategory(group.category, group.projects)), '</div>'),
+    ],
+    '</div>',
+  );
+};
 
 const renderSoftSkills = ({ profile }: Content): Lines => [
   ...(profile.softSkills.length > 0 ? block('<div class="soft-skills">', list(null, profile.softSkills, 'soft-skill'), '</div>') : []),
