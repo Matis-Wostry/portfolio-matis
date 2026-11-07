@@ -1,4 +1,4 @@
-import type { Education, Experience, Project, ProjectCategory, PublicSnapshot } from '@portfolio-matis/content';
+import type { Education, Experience, Project, ProjectCategory, PublicSnapshot, SkillCategory } from '@portfolio-matis/content';
 
 /** Les sections du site remplies par le contenu, dans l'ordre où elles apparaissent dans index.html. */
 export const SECTIONS = [
@@ -196,7 +196,18 @@ const renderProjects = ({ projectCategories, projects }: Content): Lines => {
   );
 };
 
-const renderSoftSkills = ({ profile }: Content): Lines => [
+/** Une carte par catégorie de compétences : son titre, son nombre de mots-clés, puis les mots-clés. */
+const renderSkillCard = (category: SkillCategory): Lines =>
+  block(
+    '<div class="skill-card">',
+    [
+      ...block('<div class="skill-card-header">', [`<h3 class="skill-card-title">${esc(category.title)}</h3>`, `<span class="skill-card-count">${category.skills.length}</span>`], '</div>'),
+      ...list('skill-tags', category.skills, 'skill-tag'),
+    ],
+    '</div>',
+  );
+
+const renderSoftSkills =({ profile }: Content): Lines => [
   ...(profile.softSkills.length > 0 ? block('<div class="soft-skills">', list(null, profile.softSkills, 'soft-skill'), '</div>') : []),
   ...(profile.workStyle.length > 0
     ? block(
@@ -258,7 +269,7 @@ export const renderSections = ({ content }: PublicSnapshot): Sections => ({
   goals: join(renderGoals(content)),
   experiences: join(content.experiences.flatMap(renderExperience)),
   projects: join(renderProjects(content)),
-  skills: join(content.skillCategories.flatMap((category) => block('<div class="skill-category">', [`<h3>${esc(category.title)}</h3>`, ...badges(category.skills)], '</div>'))),
+  skills: join(content.skillCategories.filter((category) => category.skills.length > 0).flatMap(renderSkillCard)),
   'soft-skills': join(renderSoftSkills(content)),
   education: join(content.educations.flatMap(renderEducation)),
   availability: join(renderAvailability(content)),

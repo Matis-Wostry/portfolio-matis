@@ -172,10 +172,18 @@ describe('autres sections', () => {
     expect(html).toContain('<p class="work-style-proof">En freelance.</p>');
   });
 
-  test('compétences en mots-clés, par catégorie', () => {
+  test('compétences : une carte par catégorie, avec son titre, son nombre et ses mots-clés', () => {
     const html = render().skills;
-    expect(html).toContain('<h3>Langages</h3>');
-    expect(html).toContain('<li class="badge">HTML</li>');
+    expect(html).toContain('<div class="skill-card">');
+    expect(html).toContain('<h3 class="skill-card-title">Langages</h3>');
+    expect(html).toContain('<span class="skill-card-count">2</span>');
+    expect(html).toContain('<ul class="skill-tags">');
+    expect(html).toContain('<li class="skill-tag">HTML</li>');
+  });
+
+  test('une catégorie de compétences vide n’a pas de carte', () => {
+    const html = render({ skillCategories: [{ id: 'vide', title: 'Vide', skills: [], position: 0 }] }).skills;
+    expect(html).toBe('');
   });
 
   test('formations avec leur détail', () => {
