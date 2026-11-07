@@ -103,3 +103,22 @@ GITHUB_DISPATCH_TOKEN=
 ```
 
 Le jeton est un jeton GitHub à portée fine, limité aux dépôts de la liste, avec **Actions : lecture et écriture**. Sans jeton, l'API refuse de démarrer si la liste contient un site. Redémarrer ensuite : `docker compose up -d`.
+
+## 8. Formulaire de contact du site
+
+Le formulaire du site classique envoie ses messages à l'API, qui les transmet par mail sans rien garder en base. Il faut un compte mail pour l'envoi. Avec Gmail :
+
+1. Activer la validation en deux étapes du compte, si ce n'est pas déjà fait.
+2. Sur <https://myaccount.google.com/apppasswords>, créer un mot de passe d'application nommé « portfolio-matis ».
+3. Ajouter à `.env`, en collant ce mot de passe sans le partager :
+
+```dotenv
+CONTACT_ORIGINS=https://matis-wostry.com,https://www.matis-wostry.com
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=matiswostry.pro@gmail.com
+SMTP_PASSWORD=
+```
+
+Facultatifs : `SMTP_PORT` (465 par défaut, 587 passe en STARTTLS) et `CONTACT_TO`, l'adresse qui reçoit les messages (par défaut, `SMTP_USER`). Les quatre réglages vont ensemble : s'il en manque un, l'API refuse de démarrer ; sans aucun, le formulaire répond qu'il est indisponible et le site propose d'écrire directement.
+
+Seules les adresses de `CONTACT_ORIGINS` peuvent envoyer le formulaire, sans session, et chaque visiteur est limité à 5 messages par heure. Un champ caché écarte les robots. Redémarrer ensuite : `docker compose up -d`.

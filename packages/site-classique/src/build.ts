@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { publicSnapshotSchema, type PublicSnapshot } from '@portfolio-matis/content';
 import { applySections } from './markers.ts';
@@ -8,7 +8,7 @@ export type BuildSource = { api: string } | { snapshotFile: string };
 export type BuildOptions = { siteDir: string; outDir: string; source: BuildSource };
 export type BuildResult = { missingMedia: string[] };
 
-/** Ce que le serveur reçoit : rien d'autre, ni .git, ni .github, ni README. */
+/** Ce que le serveur reçoit, avec les pages HTML : rien d'autre, ni .git, ni .github, ni README. */
 const PUBLISHED = ['style', 'script', 'assets'];
 /** L'adresse du CV, déjà utilisée par les deux sites. */
 const CV_PATH = join('assets', 'cv', 'CV_Matis_Wostry.pdf');
@@ -82,6 +82,10 @@ export const buildSite = async ({ siteDir, outDir, source }: BuildOptions): Prom
   mkdirSync(out, { recursive: true });
   for (const dir of PUBLISHED) {
     if (existsSync(join(site, dir))) cpSync(join(site, dir), join(out, dir), { recursive: true });
+  }
+  // Les autres pages du site, comme la politique de confidentialité, partent telles quelles.
+  for (const page of readdirSync(site).filter((name) => name.endsWith('.html') && name !== 'index.html')) {
+    cpSync(join(site, page), join(out, page));
   }
   rmSync(join(out, 'assets', 'media'), { recursive: true, force: true });
   for (const file of captures) {

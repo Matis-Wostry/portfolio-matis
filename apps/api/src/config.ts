@@ -3,6 +3,14 @@ import { PASSWORD_HASH_PATTERN } from './auth/password.ts';
 
 export type DeploySite = { name: string; repo: string; workflow: string; ref: string };
 
+export type ContactConfig = {
+  /** Les adresses du site, seules autorisées à envoyer le formulaire. */
+  origins: string[];
+  to: string;
+  from: string;
+  smtp: { host: string; port: number; secure: boolean; user: string; password: string };
+};
+
 export type AppConfig = {
   databasePath: string;
   mediaDir: string;
@@ -12,8 +20,14 @@ export type AppConfig = {
   cookieSecure: boolean;
   deploySites: DeploySite[];
   githubDispatchToken?: string;
+  /** Absent : le formulaire de contact répond qu'il est indisponible. */
+  contact?: ContactConfig;
   port: number;
 };
+
+const CONTACT_KEYS = ['CONTACT_ORIGINS', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD'] as const;
+
+const toOrigin = (value: string): string => new URL(value).origin;
 
 const deploySitesSchema = z.array(
   z.object({
@@ -46,7 +60,37 @@ const envSchema = z.object({
   DEPLOY_SITES: z.string().default('[]').transform(parseDeploySites),
   GITHUB_DISPATCH_TOKEN: z.string().min(1).optional(),
   PORT: z.coerce.number().int().min(0).max(65535).default(3000),
+  // Formulaire de contact : tout ou rien. Origines séparées par des virgules, ramenées à ce que le navigateur envoie.
+  CONTACT_ORIGINS: z
+    .string()
+    .transform((raw) => raw.split(',').map((part) => part.trim()).filter(Boolean))
+    .pipe(z.array(z.url({ error: 'doit être une liste d’adresses complètes, séparées par des virgules' }).transform(toOrigin)).min(1))
+    .optional(),
+  CONTACT_TO: z.email().optional(),
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(465),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
 });
+
+type Env = z.infer<typeof envSchema>;
+
+/** Le formulaire n'est actif que si tout son réglage est là ; un réglage à moitié fait empêche le démarrage. */
+const readContact = (data: Env): ContactConfig | undefined => {
+  const missing = CONTACT_KEYS.filter((key) => !data[key]);
+  if (missing.length === CONTACT_KEYS.length) return undefined;
+  if (missing.length > 0) {
+    throw new Error(`Configuration invalide : le formulaire de contact demande aussi ${missing.join(', ')}`);
+  }
+  const user = data.SMTP_USER as string;
+  return {
+    origins: data.CONTACT_ORIGINS as string[],
+    to: data.CONTACT_TO ?? user,
+    from: user,
+    // 465 : connexion chiffrée d'emblée ; sur les autres ports, STARTTLS.
+    smtp: { host: data.SMTP_HOST as string, port: data.SMTP_PORT, secure: data.SMTP_PORT === 465, user, password: data.SMTP_PASSWORD as string },
+  };
+};
 
 /** Lit la configuration ; sans ses secrets, le serveur refuse de démarrer plutôt que d'utiliser une valeur par défaut. */
 export const loadConfig = (env: Record<string, string | undefined> = process.env): AppConfig => {
@@ -59,6 +103,7 @@ export const loadConfig = (env: Record<string, string | undefined> = process.env
   if (data.DEPLOY_SITES.length > 0 && !data.GITHUB_DISPATCH_TOKEN) {
     throw new Error('Configuration invalide : GITHUB_DISPATCH_TOKEN est obligatoire quand DEPLOY_SITES contient des sites');
   }
+  const contact = readContact(data);
   return {
     databasePath: data.DATABASE_PATH,
     mediaDir: data.MEDIA_DIR,
@@ -68,6 +113,7 @@ export const loadConfig = (env: Record<string, string | undefined> = process.env
     cookieSecure: data.COOKIE_SECURE !== 'false',
     deploySites: data.DEPLOY_SITES,
     ...(data.GITHUB_DISPATCH_TOKEN ? { githubDispatchToken: data.GITHUB_DISPATCH_TOKEN } : {}),
+    ...(contact ? { contact } : {}),
     port: data.PORT,
   };
 };
