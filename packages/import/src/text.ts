@@ -1,10 +1,6 @@
-const withoutAccents = (text: string): string => text.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+export { slugify } from '@portfolio-matis/content';
 
-export const slugify = (text: string): string =>
-  withoutAccents(text)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+const withoutAccents = (text: string): string => text.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
 const MONTHS: Record<string, string> = {
   janvier: '01',

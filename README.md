@@ -1,13 +1,13 @@
 # Portfolio Matis
 
-Backend qui devient la source unique du contenu de mes deux sites : un jeu en pixel art et un site classique. Je modifie mon contenu à un seul endroit, je publie d'un geste, et chaque site se reconstruit à partir du même contenu.
+Backend et interface d'administration qui deviennent la source unique du contenu de mes deux sites : un jeu en pixel art et un site classique. Je modifie mon contenu à un seul endroit, je publie d'un geste, et chaque site se reconstruit à partir du même contenu.
 
-**État actuel :** l'API est terminée et testée. L'interface d'administration et le branchement des sites restent à faire.
+**État actuel :** l'API et l'interface sont terminées et testées. Reste à les mettre en ligne et à brancher les sites.
 
 ## Fonctionnement
 
 ```text
-Interface d'administration (à venir)
+Interface d'administration
    |  modifie le brouillon (session)
    v
 API Fastify --- SQLite + dossier des médias
@@ -23,16 +23,18 @@ Une panne de l'API ne peut donc pas casser un site en ligne : au pire, un déplo
 
 ## Stack
 
-- **TypeScript partout**, exécuté directement par Node 24, sans étape de compilation
-- **Fastify 5** et **Zod 4** : un seul schéma valide les requêtes et génère la documentation Swagger
+- **TypeScript partout**, exécuté directement par Node 24 côté serveur, sans étape de compilation
+- **Fastify 5** et **Zod 4** : un seul schéma valide les requêtes, les formulaires et génère la documentation Swagger
 - **SQLite** avec **Drizzle**
-- **Vitest** pour les tests, **Docker** et **GitHub Actions** pour le déploiement
+- **React 19**, **Vite**, **TanStack Query** et **React Router** pour l'interface
+- **Vitest** et **Testing Library** pour les tests, **Docker** et **GitHub Actions** pour le déploiement
 
 | Dossier | Rôle |
 |---|---|
 | `packages/content` | Schéma du contenu et règles de publication, partagés |
-| `packages/import` | Reprise du contenu du jeu, comparaison avec le site classique |
+| `packages/import` | Reprise du contenu des deux sites et trace de leurs différences |
 | `apps/api` | L'API : brouillon, médias, connexion, publication, lecture publique |
+| `apps/admin` | L'interface d'administration |
 
 ## Lancer en local
 
@@ -52,18 +54,24 @@ pnpm --filter @portfolio-matis/api seed ../../import/proposition.json
 pnpm dev:api
 ```
 
-La documentation s'ouvre sur <http://localhost:3000/docs>. Elle sert à découvrir les routes et leurs schémas : ses boutons d'essai répondent 403 sur les écritures, qui n'acceptent que l'origine de l'interface. En attendant l'interface, on écrit avec `curl`, en remplaçant le mot de passe (sous Windows, dans Git Bash, car PowerShell 5 traite `curl` différemment) :
+Puis, dans un second terminal :
 
 ```sh
-curl -c cookies.txt -H "Origin: http://localhost:5173" -H "Content-Type: application/json" \
-  -d '{"password":"ton-mot-de-passe"}' http://localhost:3000/auth/login
-
-curl -b cookies.txt http://localhost:3000/admin/projects
-curl -b cookies.txt -X POST -H "Origin: http://localhost:5173" http://localhost:3000/admin/publish
-curl http://localhost:3000/public/snapshot
+pnpm dev:admin
 ```
 
+L'interface s'ouvre sur <http://localhost:5173>, et la documentation de l'API sur <http://localhost:3000/docs>. Cette documentation sert à découvrir les routes et leurs schémas : ses boutons d'essai répondent 403 sur les écritures, qui n'acceptent que l'origine de l'interface.
+
 `pnpm import:jeu` suppose que les dépôts `jeu` et `classique` sont à côté de celui-ci. Il écrit dans `import/`, ignoré par Git : `proposition.json` reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations et les savoir-être du site classique, avec un texte « À propos » et une carte « La Chambre du Dev » réécrits pour valoir sur les deux sites. `ecarts.md` garde la trace de ce qui diffère entre les deux sites.
+
+## L'interface
+
+- Une liste et un formulaire pour les projets, les expériences, les formations et les compétences ; une fiche pour la présentation et le contact
+- L'envoi des captures et du CV, et une page pour supprimer les médias devenus inutiles
+- Un aperçu de relecture, un bouton Publier, et l'état du dernier déploiement de chaque site
+- Aucune saisie perdue sans avertissement : une session expirée se rouvre par-dessus le formulaire, puis l'enregistrement repart tout seul
+
+Le style reprend les couleurs et la police du jeu. Tout est en graisse normale, parce qu'en gras le C de Pixelify Sans se lit comme un O et le 2 comme un 8.
 
 ## L'API
 
