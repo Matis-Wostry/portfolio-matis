@@ -19,13 +19,14 @@ const Form = ({ initial, existingId }: { initial: Values; existingId?: string })
     toPayload: ({ id, ...values }) => ({ ...(existingId ? {} : { id }), ...values }),
     save: ((payload: object) =>
       existingId ? api.put(`/admin/skill-categories/${encodeURIComponent(existingId)}`, payload) : api.post('/admin/skill-categories', payload)) as never,
-    ...(existingId ? {} : { onSaved: goToCreated }),
+    ...(existingId ? {} : { onSaved: goToCreated, lockWhileSaving: true }),
   });
   const { values, setField, errorFor } = form;
   const slug = useSlugFromTitle((id) => setField('id', id));
 
   return (
     <form className="form single" onSubmit={(event) => void form.submit(event)} noValidate>
+      <fieldset className="plain" disabled={form.locked}>
       <div className="form-col">
         <TextField
           label="Titre"
@@ -40,6 +41,7 @@ const Form = ({ initial, existingId }: { initial: Values; existingId?: string })
         <TagsField label="Compétences" values={values.skills} error={errorFor('skills')} onChange={(skills) => setField('skills', skills)} />
         <FormActions form={form} />
       </div>
+      </fieldset>
     </form>
   );
 };

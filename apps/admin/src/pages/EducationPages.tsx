@@ -30,13 +30,14 @@ const Form = ({ initial, existingId }: { initial: Values; existingId?: string })
     toPayload: ({ id, ...values }) => ({ ...(existingId ? {} : { id }), ...values, end: orNull(values.end) }),
     save: ((payload: object) =>
       existingId ? api.put(`/admin/educations/${encodeURIComponent(existingId)}`, payload) : api.post('/admin/educations', payload)) as never,
-    ...(existingId ? {} : { onSaved: goToCreated }),
+    ...(existingId ? {} : { onSaved: goToCreated, lockWhileSaving: true }),
   });
   const { values, setField, errorFor } = form;
   const slug = useSlugFromTitle((id) => setField('id', id));
 
   return (
     <form className="form single" onSubmit={(event) => void form.submit(event)} noValidate>
+      <fieldset className="plain" disabled={form.locked}>
       <div className="form-col">
         <div className="form-row">
           <TextField
@@ -58,6 +59,7 @@ const Form = ({ initial, existingId }: { initial: Values; existingId?: string })
         <ListField label="Détails" path="details" values={values.details} errorFor={errorFor} onChange={(details) => setField('details', details)} />
         <FormActions form={form} />
       </div>
+      </fieldset>
     </form>
   );
 };

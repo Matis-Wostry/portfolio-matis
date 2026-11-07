@@ -15,7 +15,10 @@ export const UnsavedGuard = () => {
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (latest.current) event.preventDefault();
+      if (!latest.current) return;
+      event.preventDefault();
+      // Les navigateurs plus anciens n'avertissent que si returnValue est renseigné.
+      event.returnValue = '';
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);

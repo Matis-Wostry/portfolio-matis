@@ -56,13 +56,14 @@ const Form = ({ initial, existingId }: { initial: Values; existingId?: string })
     }),
     save: ((payload: object) =>
       existingId ? api.put(`/admin/experiences/${encodeURIComponent(existingId)}`, payload) : api.post('/admin/experiences', payload)) as never,
-    ...(existingId ? {} : { onSaved: goToCreated }),
+    ...(existingId ? {} : { onSaved: goToCreated, lockWhileSaving: true }),
   });
   const { values, setField, errorFor } = form;
   const slug = useSlugFromTitle((id) => setField('id', id));
 
   return (
     <form className="form single" onSubmit={(event) => void form.submit(event)} noValidate>
+      <fieldset className="plain" disabled={form.locked}>
       <div className="form-col">
         <div className="form-row">
           <TextField
@@ -87,6 +88,7 @@ const Form = ({ initial, existingId }: { initial: Values; existingId?: string })
         <TagsField label="Technos" values={values.techs} error={errorFor('techs')} onChange={(techs) => setField('techs', techs)} />
         <FormActions form={form} />
       </div>
+      </fieldset>
     </form>
   );
 };

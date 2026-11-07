@@ -67,13 +67,14 @@ const ProjectFormBody = ({ initial, existingId }: { initial: Values; existingId?
     },
     save: ((payload: object) =>
       existingId ? api.put<Project>(`/admin/projects/${encodeURIComponent(existingId)}`, payload) : api.post<Project>('/admin/projects', payload)) as never,
-    ...(existingId ? {} : { onSaved: goToCreated }),
+    ...(existingId ? {} : { onSaved: goToCreated, lockWhileSaving: true }),
   });
   const { values, setField, errorFor } = form;
   const slug = useSlugFromTitle((id) => setField('id', id));
 
   return (
     <form className="form" onSubmit={(event) => void form.submit(event)} noValidate>
+      <fieldset className="plain" disabled={form.locked}>
       <div className="form-col">
         <div className="form-row">
           <TextField
@@ -102,6 +103,7 @@ const ProjectFormBody = ({ initial, existingId }: { initial: Values; existingId?
           <LinksField values={values.links} errorFor={errorFor} onChange={(links) => setField('links', links)} />
         </Group>
       </div>
+      </fieldset>
     </form>
   );
 };

@@ -13,8 +13,8 @@ const QueryProvider = ({ children }: { children: ReactNode }) => {
     const created: QueryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
       queryCache: new QueryCache({
-        onError: (error) => {
-          if (!(error instanceof ApiError && error.status === 401)) return;
+        onError: (error, query) => {
+          if (!(error instanceof ApiError && error.status === 401) || query.meta?.background) return;
           reauth
             .current()
             .then(() => created.invalidateQueries())

@@ -4,6 +4,8 @@ import { Link, NavLink, Outlet, useMatches, useParams } from 'react-router';
 import type { DraftState } from '@portfolio-matis/content';
 import { api } from '../api/client.ts';
 import { useSession } from '../app/session.tsx';
+import { useHasUnsaved } from '../app/unsaved.tsx';
+import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { DRAFT_QUERY } from '../app/queries.ts';
 import { DraftBadge } from '../components/DraftBadge.tsx';
 import { PublishButton } from '../components/PublishButton.tsx';
@@ -19,8 +21,32 @@ const useSectionTitle = (): string => {
   return handle?.section ?? '';
 };
 
-const Sidebar = ({ onNavigate, open }: { onNavigate(): void; open: boolean }) => {
+const LogoutButton = () => {
   const { logout } = useSession();
+  const hasUnsaved = useHasUnsaved();
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const leave = () => {
+    setConfirming(false);
+    setError(null);
+    logout().catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Déconnexion impossible'));
+  };
+
+  return (
+    <>
+      <button type="button" className="link-button" onClick={() => (hasUnsaved ? setConfirming(true) : leave())}>Se déconnecter</button>
+      {error && <p className="error" role="alert">{error}</p>}
+      {confirming && (
+        <ConfirmDialog title="Modifications non enregistrées" confirmLabel="Se déconnecter quand même" cancelLabel="Rester" onConfirm={leave} onCancel={() => setConfirming(false)}>
+          <p>Si vous vous déconnectez maintenant, ce que vous venez de saisir sera perdu.</p>
+        </ConfirmDialog>
+      )}
+    </>
+  );
+};
+
+const Sidebar = ({ onNavigate, open }: { onNavigate(): void; open: boolean }) => {
   const { data } = useQuery({ queryKey: DRAFT_QUERY, queryFn: () => api.get<DraftState>('/admin/draft') });
   const links = [
     { to: '/projets', label: 'Projets', count: data?.projects.length },
@@ -44,7 +70,7 @@ const Sidebar = ({ onNavigate, open }: { onNavigate(): void; open: boolean }) =>
       </nav>
       <div className="side-bottom">
         <SitesStatus />
-        <button type="button" className="link-button" onClick={() => void logout()}>Se déconnecter</button>
+        <LogoutButton />
       </div>
     </aside>
   );

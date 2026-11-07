@@ -13,6 +13,8 @@ type Options<V, R> = {
   toPayload?: (values: V) => unknown;
   save: (payload: never) => Promise<R>;
   onSaved?: (result: R) => void;
+  /** Fige les champs pendant l'envoi : utile à la création, qui change ensuite de page. */
+  lockWhileSaving?: boolean;
 };
 
 export type EntityForm<V> = {
@@ -21,6 +23,7 @@ export type EntityForm<V> = {
   errorFor: (path: string) => string | undefined;
   isDirty: boolean;
   saving: boolean;
+  locked: boolean;
   saved: boolean;
   message: string | null;
   submit: (event?: FormEvent) => Promise<void>;
@@ -28,7 +31,7 @@ export type EntityForm<V> = {
 
 const UNSAVED_MESSAGE = 'Vos modifications n’ont pas été enregistrées.';
 
-export const useEntityForm = <V, R = unknown>({ initial, schema, toPayload, save, onSaved }: Options<V, R>): EntityForm<V> => {
+export const useEntityForm = <V, R = unknown>({ initial, schema, toPayload, save, onSaved, lockWhileSaving = false }: Options<V, R>): EntityForm<V> => {
   const queryClient = useQueryClient();
   const run = useAuthedAction();
   const [values, setValues] = useState<V>(initial);
@@ -99,6 +102,7 @@ export const useEntityForm = <V, R = unknown>({ initial, schema, toPayload, save
     errorFor: (path) => errors[path],
     isDirty,
     saving,
+    locked: lockWhileSaving && saving,
     saved: saved && !isDirty,
     message,
     submit,

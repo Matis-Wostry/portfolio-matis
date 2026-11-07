@@ -1,37 +1,53 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router';
+import type { DraftState } from '@portfolio-matis/content';
 import { api, ApiError, type ApiIssue } from '../api/client.ts';
+import { DRAFT_QUERY } from '../app/queries.ts';
 import { useHasUnsaved } from '../app/unsaved.tsx';
 import { useAuthedAction } from '../hooks/useAuthedAction.ts';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
 
-/** L'écran où corriger un problème signalé à la publication. */
-const issueLink = (path: string): string | null => {
-  const [root, id] = path.split('.');
-  const lists: Record<string, string> = {
-    projects: '/projets',
-    experiences: '/experiences',
-    educations: '/formations',
-    skillCategories: '/competences',
-  };
-  if (root === 'profile') return '/presentation';
-  if (root === 'contact') return '/contact';
-  if (root === 'media') return '/medias';
-  if (root === 'projectCategories') return '/projets';
-  const base = root ? lists[root] : undefined;
-  return base ? `${base}/${id}` : null;
+type ListKey = 'projects' | 'experiences' | 'educations' | 'skillCategories';
+
+const LISTS: Record<ListKey, { page: string; name(row: Record<string, unknown>): string }> = {
+  projects: { page: '/projets', name: (row) => String(row.title) },
+  experiences: { page: '/experiences', name: (row) => String(row.title) },
+  educations: { page: '/formations', name: (row) => String(row.degree) },
+  skillCategories: { page: '/competences', name: (row) => String(row.title) },
 };
 
-const IssuesDialog = ({ issues, onClose }: { issues: ApiIssue[]; onClose(): void }) => (
+type IssueTarget = { to: string | null; name: string | null };
+
+/**
+ * L'écran où corriger un problème signalé à la publication. L'API désigne un élément par son identifiant
+ * (`projects.pokedex.categoryId`), ou par sa position quand le brouillon ne respecte plus le schéma (`projects.1.summary`).
+ */
+const issueTarget = (path: string, draft: DraftState | undefined): IssueTarget => {
+  const [root, key] = path.split('.');
+  if (root === 'profile') return { to: '/presentation', name: null };
+  if (root === 'contact') return { to: '/contact', name: null };
+  if (root === 'media') return { to: '/medias', name: null };
+  if (root === 'projectCategories') return { to: '/projets', name: null };
+  if (!root || !(root in LISTS) || key === undefined) return { to: null, name: null };
+
+  const list = LISTS[root as ListKey];
+  const rows = (draft?.[root as ListKey] ?? []) as unknown as Record<string, unknown>[];
+  const row = /^\d+$/.test(key) ? rows[Number(key)] : rows.find((candidate) => candidate.id === key);
+  if (row) return { to: `${list.page}/${String(row.id)}`, name: list.name(row) };
+  return /^\d+$/.test(key) ? { to: list.page, name: null } : { to: `${list.page}/${key}`, name: null };
+};
+
+const IssuesDialog = ({ issues, draft, onClose }: { issues: ApiIssue[]; draft: DraftState | undefined; onClose(): void }) => (
   <div className="overlay">
     <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="issues-title">
       <h2 id="issues-title">Le contenu n’est pas prêt</h2>
       <p>Rien n’a été publié. À corriger :</p>
       <ul>
         {issues.map((issue) => {
-          const to = issueLink(issue.path);
-          return <li key={issue.path}>{to ? <Link to={to} onClick={onClose}>{issue.message}</Link> : issue.message}</li>;
+          const { to, name } = issueTarget(issue.path, draft);
+          const text = name ? `${issue.message} (${name})` : issue.message;
+          return <li key={issue.path}>{to ? <Link to={to} onClick={onClose}>{text}</Link> : text}</li>;
         })}
       </ul>
       <div className="dialog-actions">
@@ -41,10 +57,13 @@ const IssuesDialog = ({ issues, onClose }: { issues: ApiIssue[]; onClose(): void
   </div>
 );
 
+type PublishResult = { snapshotId: number; deploys: { site: string; error: string | null }[] };
+
 export const PublishButton = () => {
   const queryClient = useQueryClient();
   const run = useAuthedAction();
   const hasUnsaved = useHasUnsaved();
+  const { data: draft } = useQuery({ queryKey: DRAFT_QUERY, queryFn: () => api.get<DraftState>('/admin/draft') });
   const [confirming, setConfirming] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [issues, setIssues] = useState<ApiIssue[] | null>(null);
@@ -58,7 +77,12 @@ export const PublishButton = () => {
     setPublishing(true);
     setError(null);
     try {
-      await run(() => api.post('/admin/publish'));
+      const result = await run(() => api.post<PublishResult>('/admin/publish'));
+      // Le contenu est publié, mais un site n'a pas pu être relancé : à dire ici, car l'état des sites n'est pas visible sur téléphone.
+      const refused = result.deploys.filter((deploy) => deploy.error);
+      if (refused.length > 0) {
+        setError(`Publié, mais ${refused.map((deploy) => `${deploy.site} n’a pas pu être relancé : ${deploy.error}`).join(' ; ')}`);
+      }
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 409 && caught.issues.length > 0) setIssues(caught.issues);
       else setError(caught instanceof ApiError ? caught.message : 'Publication annulée');
@@ -81,7 +105,7 @@ export const PublishButton = () => {
           <p>Tout le contenu enregistré sera figé et les sites seront reconstruits. Un projet pas encore prêt peut être masqué.</p>
         </ConfirmDialog>
       )}
-      {issues && <IssuesDialog issues={issues} onClose={() => setIssues(null)} />}
+      {issues && <IssuesDialog issues={issues} draft={draft} onClose={() => setIssues(null)} />}
     </>
   );
 };
