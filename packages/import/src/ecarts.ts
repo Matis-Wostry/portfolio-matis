@@ -179,6 +179,16 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
 const FREELANCE_SUMMARY = 'Missions SEO pour Le MieuxDisant, et sites WordPress pour d’autres clients.';
 const FREELANCE_SITES = 'Création des sites WordPress de MB Ventilation et MB Home';
 
+/** L'alternance chez Octoplus, décrite par Matis le 2026-11-08 : du développement full-stack, la création d'un SaaS. */
+const OCTOPLUS_DETAILS = {
+  summary: 'Alternance d’un an en développement full-stack, en parallèle de mon Bachelor à CREA : je participe à la création d’un SaaS.',
+  missions: [
+    'Développement full-stack d’un SaaS, de l’interface à l’API',
+    'Mise en place de la connexion et de la gestion des comptes utilisateurs',
+    'Conception et développement de l’API de l’application',
+  ],
+};
+
 type Experience = DraftContent['experiences'][number];
 
 /**
@@ -206,6 +216,9 @@ const withClassiqueMissions = (experiences: Experience[], classique: ClassiqueFa
       };
     }
     if (/mieuxdisant/i.test(experience.company)) return fill(experience, fromClassique(/mieuxdisant/i, /freelance/i));
+    if (/octoplus/i.test(experience.company) && experience.missions.length === 0) {
+      return { ...experience, summary: experience.summary ?? OCTOPLUS_DETAILS.summary, missions: OCTOPLUS_DETAILS.missions };
+    }
     return experience;
   });
 };

@@ -128,6 +128,22 @@ describe('proposition', () => {
     expect(freelance?.techs).toEqual(['SEO', 'SEMrush', 'WordPress']);
   });
 
+  test('l’alternance chez Octoplus décrit la création d’un SaaS, sans technos inventées', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const octoplus = { id: 'octoplus-solutions', title: 'Développeur full-stack junior', company: 'Octoplus Solutions', kind: 'alternance' as const, start: '2026', end: '2027', summary: null, missions: [], techs: [], position: 3 };
+    const found = buildProposal({ ...jeu, experiences: [...jeu.experiences, octoplus] }, classique).content.experiences.find((e) => e.id === 'octoplus-solutions');
+    expect(found).toMatchObject({
+      summary: 'Alternance d’un an en développement full-stack, en parallèle de mon Bachelor à CREA : je participe à la création d’un SaaS.',
+      missions: [
+        'Développement full-stack d’un SaaS, de l’interface à l’API',
+        'Mise en place de la connexion et de la gestion des comptes utilisateurs',
+        'Conception et développement de l’API de l’application',
+      ],
+      techs: [],
+    });
+  });
+
   test('une expérience du jeu déjà détaillée garde ses propres missions', async () => {
     const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
     const jeu = await readJeu(join(fixtures, 'jeu'));
