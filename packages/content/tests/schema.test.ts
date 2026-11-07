@@ -35,8 +35,9 @@ describe('projet', () => {
     expect(projectSchema.safeParse({ ...minimalProject, captures }).success).toBe(false);
   });
 
-  test('une catégorie hors de pro, ecole, perso est refusée', () => {
-    expect(projectSchema.safeParse({ ...minimalProject, categoryId: 'autre' }).success).toBe(false);
+  test('une catégorie se désigne par un identifiant en minuscules et tirets, pas seulement pro, ecole ou perso', () => {
+    expect(projectSchema.safeParse({ ...minimalProject, categoryId: 'hackathon' }).success).toBe(true);
+    expect(projectSchema.safeParse({ ...minimalProject, categoryId: 'Mes Projets' }).success).toBe(false);
   });
 });
 

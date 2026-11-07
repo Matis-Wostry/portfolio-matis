@@ -105,22 +105,50 @@ describe('autres collections', () => {
 });
 
 describe('catégories de projets', () => {
-  test('PUT remplit une catégorie fixe, à sa place', async () => {
-    const response = await call('PUT', '/admin/project-categories/perso', { title: 'Perso', description: 'Pour apprendre' });
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ id: 'perso', title: 'Perso', description: 'Pour apprendre', position: 2 });
-    await call('PUT', '/admin/project-categories/pro', { title: 'Pro', description: 'En entreprise' });
-    expect((await call('GET', '/admin/project-categories')).json().map((c: { id: string }) => c.id)).toEqual(['pro', 'perso']);
+  const category = (id: string, title = id) => ({ id, title, description: `Projets ${title}` });
+  const ids = async () => (await call('GET', '/admin/project-categories')).json().map((c: { id: string }) => c.id);
+
+  test('une nouvelle catégorie se crée, se modifie, se range et se supprime', async () => {
+    const created = await call('POST', '/admin/project-categories', category('hackathon', 'Hackathons'));
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toEqual({ ...category('hackathon', 'Hackathons'), position: 0 });
+    await call('POST', '/admin/project-categories', category('perso'));
+
+    const updated = await call('PUT', '/admin/project-categories/hackathon', { title: 'Hackathons', description: 'En 48 heures' });
+    expect(updated.json()).toEqual({ id: 'hackathon', title: 'Hackathons', description: 'En 48 heures', position: 0 });
+
+    expect((await call('POST', '/admin/project-categories/reorder', { ids: ['perso', 'hackathon'] })).statusCode).toBe(204);
+    expect(await ids()).toEqual(['perso', 'hackathon']);
+
+    expect((await call('DELETE', '/admin/project-categories/hackathon')).statusCode).toBe(204);
+    expect(await ids()).toEqual(['perso']);
   });
 
-  test('une catégorie hors des trois identifiants répond 400', async () => {
-    const response = await call('PUT', '/admin/project-categories/autre', { title: 'T', description: 'D' });
+  test('un identifiant qui n’est pas en minuscules et tirets répond 400', async () => {
+    const response = await call('POST', '/admin/project-categories', category('Mes Projets'));
     expect(response.statusCode).toBe(400);
+    expect(response.json().issues[0].path).toBe('id');
   });
 
-  test('elle n’a ni création ni suppression', async () => {
-    expect((await call('POST', '/admin/project-categories', { title: 'T', description: 'D' })).statusCode).toBe(404);
-    expect((await call('DELETE', '/admin/project-categories/pro')).statusCode).toBe(404);
+  test('un identifiant déjà pris répond 409', async () => {
+    await call('POST', '/admin/project-categories', category('perso'));
+    expect((await call('POST', '/admin/project-categories', category('perso'))).statusCode).toBe(409);
+  });
+
+  test('une catégorie encore utilisée par des projets ne se supprime pas, et le message dit combien', async () => {
+    await call('POST', '/admin/project-categories', category('ecole', 'École'));
+    await call('POST', '/admin/projects', projectInput({ id: 'a', categoryId: 'ecole' }));
+    await call('POST', '/admin/projects', projectInput({ id: 'b', categoryId: 'ecole' }));
+
+    const response = await call('DELETE', '/admin/project-categories/ecole');
+    expect(response.statusCode).toBe(409);
+    expect(response.json().message).toBe('« École » contient encore 2 projets : changez-les de catégorie avant de la supprimer');
+    expect(await ids()).toEqual(['ecole']);
+  });
+
+  test('une catégorie inconnue répond 404 sur PUT et DELETE', async () => {
+    expect((await call('PUT', '/admin/project-categories/inconnue', { title: 'T', description: 'D' })).statusCode).toBe(404);
+    expect((await call('DELETE', '/admin/project-categories/inconnue')).statusCode).toBe(404);
   });
 });
 
