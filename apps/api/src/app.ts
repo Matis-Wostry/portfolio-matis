@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
-import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyError, type FastifyInstance, type FastifyRequest } from 'fastify';
 import {
   hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
@@ -11,6 +11,8 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod';
 import type { AppConfig } from './config.ts';
+import { createSmtpMailer, type Mailer } from './contact/mailer.ts';
+import { CONTACT_URL, contactRoutes } from './routes/contact.ts';
 import { openDatabase, type Db } from './db/client.ts';
 import { createDraftRepo, type DraftRepo } from './db/draft-repo.ts';
 import { createGithubDispatcher, type Dispatcher } from './deploy/dispatcher.ts';
@@ -59,9 +61,11 @@ const registerErrorHandler = (app: FastifyInstance): void => {
   });
 };
 
-export type AppDeps = { dispatcher?: Dispatcher };
+export type AppDeps = { dispatcher?: Dispatcher; mailer?: Mailer };
 
 export const buildApp = async (config: AppConfig, deps: AppDeps = {}): Promise<FastifyInstance> => {
+  // Sans réglage du formulaire, il reste désactivé, même avec un expéditeur fourni.
+  const mailer = config.contact ? (deps.mailer ?? createSmtpMailer(config.contact)) : null;
   const dispatcher =
     deps.dispatcher ?? (config.githubDispatchToken ? createGithubDispatcher(config.githubDispatchToken) : null);
   if (config.deploySites.length > 0 && !dispatcher) {
@@ -94,19 +98,25 @@ export const buildApp = async (config: AppConfig, deps: AppDeps = {}): Promise<F
   app.setSerializerCompiler(serializerCompiler);
   registerErrorHandler(app);
 
-  // Vérifiée avant tout le reste : une écriture ne peut venir que de l'interface.
+  const contactOrigins = config.contact?.origins ?? [];
+  const isContact = (url: string): boolean => url.split('?')[0] === CONTACT_URL;
+
+  // Vérifiée avant tout le reste : une écriture ne peut venir que de l'interface, sauf le formulaire de contact du site.
   app.addHook('onRequest', async (request, reply) => {
-    if (!SAFE_METHODS.has(request.method) && request.headers.origin !== config.adminOrigin) {
-      return reply.code(403).send({ message: 'Origine refusée' });
-    }
-    return undefined;
+    if (SAFE_METHODS.has(request.method)) return undefined;
+    const origin = request.headers.origin ?? '';
+    // Formulaire non configuré : la route répond elle-même qu'il est indisponible, quelle que soit l'origine.
+    const allowed = isContact(request.url) ? !config.contact || contactOrigins.includes(origin) : origin === config.adminOrigin;
+    return allowed ? undefined : reply.code(403).send({ message: 'Origine refusée' });
   });
 
   await app.register(cookie, { secret: config.sessionSecret });
+  // Le site n'a accès qu'au formulaire, sans cookie ; l'interface garde son accès avec cookie au reste.
   await app.register(cors, {
-    origin: [config.adminOrigin],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    delegator: async (request: FastifyRequest) =>
+      isContact(request.url)
+        ? { origin: contactOrigins, methods: ['POST'], credentials: false }
+        : { origin: [config.adminOrigin], credentials: true, methods: ['GET', 'POST', 'PUT', 'DELETE'] },
   });
   await app.register(rateLimit, { global: false });
   await app.register(swagger, {
@@ -138,6 +148,7 @@ export const buildApp = async (config: AppConfig, deps: AppDeps = {}): Promise<F
   );
 
   await app.register(publicRoutes);
+  await app.register(contactRoutes, { mailer });
 
   app.get('/health', { schema: { tags: ['Santé'], summary: 'Indique que le service répond' } }, async () => ({ ok: true }));
 

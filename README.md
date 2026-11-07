@@ -94,6 +94,7 @@ Le style reprend les couleurs et la police du jeu. Tout est en graisse normale, 
 | `/admin/media` | Session | Envoyer, lister, lire, supprimer un média |
 | `POST /admin/publish`, `GET /admin/status` | Session | Publier, voir l'état des déploiements |
 | `GET /public/snapshot`, `GET /public/media/:file` | Public | Dernier contenu publié, sans brouillon ni projet masqué |
+| `POST /public/contact` | Site seulement | Formulaire de contact : envoie le message par mail, sans rien garder, 5 envois par heure |
 | `GET /docs` | Public | Documentation Swagger |
 
 ## Sécurité

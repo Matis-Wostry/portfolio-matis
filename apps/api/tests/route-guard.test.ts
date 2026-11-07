@@ -2,7 +2,8 @@ import { afterAll, beforeAll, expect, test } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { ADMIN_ORIGIN, createTestApp } from './helpers.ts';
 
-const PUBLIC_WRITE_ROUTES = ['POST /auth/login'];
+// Le formulaire de contact du site s'envoie sans session : il n'accepte que les origines du site, et peu d'envois par heure.
+const PUBLIC_WRITE_ROUTES = ['POST /auth/login', 'POST /public/contact'];
 
 let app: FastifyInstance;
 
