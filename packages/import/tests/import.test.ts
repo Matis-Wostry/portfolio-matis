@@ -92,16 +92,16 @@ describe('proposition', () => {
     expect(content.contact.email).toBe('matiswostry.pro@gmail.com');
   });
 
-  test('le lien GitHub devient le Git perso sur le Forgejo de Matis, à la même place', () => {
-    expect(content.contact.links).toEqual([{ label: 'Git perso', href: 'https://git.matis-wostry.com' }]);
+  test('le lien GitHub devient le lien « Mes dépôts Git » vers le Forgejo de Matis, à la même place', () => {
+    expect(content.contact.links).toEqual([{ label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com' }]);
   });
 
-  test('sans lien GitHub dans le jeu, le Git perso est ajouté en dernier', async () => {
+  test('sans lien GitHub dans le jeu, le lien vers le Forgejo est ajouté en dernier', async () => {
     const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
     const jeu = await readJeu(join(fixtures, 'jeu'));
     const linkedIn = { label: 'LinkedIn', href: 'https://www.linkedin.com/in/matis-wostry/' };
     const { links } = buildProposal({ ...jeu, contact: { ...jeu.contact, links: [linkedIn] } }, classique).content.contact;
-    expect(links).toEqual([linkedIn, { label: 'Git perso', href: 'https://git.matis-wostry.com' }]);
+    expect(links).toEqual([linkedIn, { label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com' }]);
   });
 
   test('donne des identifiants stables aux loisirs et aux compétences, sans leur présentation', () => {
