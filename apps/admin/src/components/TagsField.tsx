@@ -39,13 +39,15 @@ export const TagsField = ({ label, values, onChange, error }: Props) => {
         <input
           id={id}
           type="text"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
           onBlur={commit}
         />
       </div>
-      {error && <p className="field-error">{error}</p>}
+      {error && <p className="field-error" id={`${id}-error`}>{error}</p>}
     </div>
   );
 };

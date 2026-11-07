@@ -1,4 +1,4 @@
-import { createInput, educationSchema, updateInput, type Education } from '@portfolio-matis/content';
+import { educationSchema, updateInput, type Education } from '@portfolio-matis/content';
 import { api } from '../api/client.ts';
 import { EntityList } from '../components/EntityList.tsx';
 import { FormActions } from '../components/FormActions.tsx';
@@ -7,7 +7,7 @@ import { ListField } from '../components/ListField.tsx';
 import { SlugField } from '../components/SlugField.tsx';
 import { useEntityForm } from '../hooks/useEntityForm.ts';
 import { useSlugFromTitle } from '../hooks/useSlugFromTitle.ts';
-import { EntityEdit, orNull, useGoToCreated } from './entity.tsx';
+import { creationSchema, EntityEdit, orNull, useGoToCreated } from './entity.tsx';
 
 type Values = { id: string; degree: string; school: string; start: string; end: string; details: string[] };
 
@@ -26,10 +26,10 @@ const Form = ({ initial, existingId }: { initial: Values; existingId?: string })
   const goToCreated = useGoToCreated('/formations');
   const form = useEntityForm<Values, Education>({
     initial,
-    schema: existingId ? updateInput(educationSchema) : createInput(educationSchema),
+    schema: existingId ? updateInput(educationSchema) : creationSchema(educationSchema),
     toPayload: ({ id, ...values }) => ({ ...(existingId ? {} : { id }), ...values, end: orNull(values.end) }),
-    save: ((payload: object) =>
-      existingId ? api.put(`/admin/educations/${encodeURIComponent(existingId)}`, payload) : api.post('/admin/educations', payload)) as never,
+    save: (payload) =>
+      existingId ? api.put<Education>(`/admin/educations/${encodeURIComponent(existingId)}`, payload) : api.post<Education>('/admin/educations', payload),
     ...(existingId ? {} : { onSaved: goToCreated, lockWhileSaving: true }),
   });
   const { values, setField, errorFor } = form;

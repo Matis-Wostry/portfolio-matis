@@ -2,10 +2,14 @@ import { useId, type ReactNode } from 'react';
 
 type Common = { label: string; error?: string | undefined; hint?: string };
 
+/** Les identifiants des textes qui décrivent un champ, lus avec lui par les lecteurs d'écran. */
+const describedBy = (id: string, error: string | undefined, hint: string | undefined): string | undefined =>
+  [hint ? `${id}-hint` : null, error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined;
+
 const Message = ({ id, error, hint }: { id: string; error?: string | undefined; hint?: string | undefined }) => (
   <>
-    {hint && <p className="hint">{hint}</p>}
-    {error && <p className="field-error" id={id}>{error}</p>}
+    {hint && <p className="hint" id={`${id}-hint`}>{hint}</p>}
+    {error && <p className="field-error" id={`${id}-error`}>{error}</p>}
   </>
 );
 
@@ -26,13 +30,12 @@ const textareaClass = (rows: number): string | undefined => {
 
 export const TextField = ({ label, value, onChange, error, hint, readOnly, rows, hideLabel }: TextProps) => {
   const id = useId();
-  const errorId = `${id}-error`;
   const shared = {
     id,
     value,
     readOnly,
     'aria-invalid': error ? true : undefined,
-    'aria-describedby': error ? errorId : undefined,
+    'aria-describedby': describedBy(id, error, hint),
   } as const;
   return (
     <div className="field">
@@ -42,7 +45,7 @@ export const TextField = ({ label, value, onChange, error, hint, readOnly, rows,
       ) : (
         <input {...shared} type="text" onChange={(event) => onChange(event.target.value)} />
       )}
-      <Message id={errorId} error={error} hint={hint} />
+      <Message id={id} error={error} hint={hint} />
     </div>
   );
 };
@@ -58,12 +61,12 @@ export const SelectField = <T extends string>({ label, value, options, onChange,
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
-      <select id={id} value={value} onChange={(event) => onChange(event.target.value as T)}>
+      <select id={id} value={value} aria-invalid={error ? true : undefined} aria-describedby={describedBy(id, error, undefined)} onChange={(event) => onChange(event.target.value as T)}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>
         ))}
       </select>
-      <Message id={`${id}-error`} error={error} />
+      <Message id={id} error={error} />
     </div>
   );
 };

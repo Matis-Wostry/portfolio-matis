@@ -7,6 +7,7 @@ import { DRAFT_QUERY } from '../app/queries.ts';
 import { useHasUnsaved } from '../app/unsaved.tsx';
 import { useAuthedAction } from '../hooks/useAuthedAction.ts';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
+import { Dialog } from './Dialog.tsx';
 
 type ListKey = 'projects' | 'experiences' | 'educations' | 'skillCategories';
 
@@ -39,9 +40,7 @@ const issueTarget = (path: string, draft: DraftState | undefined): IssueTarget =
 };
 
 const IssuesDialog = ({ issues, draft, onClose }: { issues: ApiIssue[]; draft: DraftState | undefined; onClose(): void }) => (
-  <div className="overlay">
-    <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="issues-title">
-      <h2 id="issues-title">Le contenu n’est pas prêt</h2>
+  <Dialog title="Le contenu n’est pas prêt" onClose={onClose}>
       <p>Rien n’a été publié. À corriger :</p>
       <ul>
         {issues.map((issue) => {
@@ -53,8 +52,7 @@ const IssuesDialog = ({ issues, draft, onClose }: { issues: ApiIssue[]; draft: D
       <div className="dialog-actions">
         <button type="button" className="btn" onClick={onClose} autoFocus>Fermer</button>
       </div>
-    </div>
-  </div>
+  </Dialog>
 );
 
 type PublishResult = { snapshotId: number; deploys: { site: string; error: string | null }[] };

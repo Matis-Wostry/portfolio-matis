@@ -111,6 +111,18 @@ const Preview = ({ draft }: { draft: DraftState }) => {
               </div>
             );
           })}
+          {(() => {
+            // Une catégorie absente ne doit pas faire disparaître ses projets de la relecture.
+            const known = new Set(draft.projectCategories.map((category) => category.id));
+            const orphans = draft.projects.filter((project) => !known.has(project.categoryId));
+            if (orphans.length === 0) return null;
+            return (
+              <div>
+                <h3>Sans catégorie</h3>
+                {orphans.map((project) => <ProjectCard key={project.id} project={project} />)}
+              </div>
+            );
+          })()}
         </Section>
       )}
 

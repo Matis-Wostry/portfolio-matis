@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import type { z } from 'zod';
+import { createInput } from '@portfolio-matis/content';
 import { api } from '../api/client.ts';
 import { QueryState } from '../components/QueryState.tsx';
 
@@ -22,3 +24,10 @@ export const useGoToCreated = (basePath: string) => {
 };
 
 export const orNull = (value: string): string | null => (value.trim() === '' ? null : value);
+
+/** L'adresse `…/nouveau` sert à créer : aucun élément ne peut porter cet identifiant. */
+export const creationSchema = <S extends z.ZodRawShape>(schema: z.ZodObject<S>) =>
+  createInput(schema).refine((values) => (values as { id?: unknown }).id !== 'nouveau', {
+    path: ['id'],
+    message: '« nouveau » est réservé : choisissez un autre identifiant',
+  });
