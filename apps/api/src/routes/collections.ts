@@ -5,7 +5,6 @@ import {
   createInput,
   educationSchema,
   experienceSchema,
-  PROJECT_CATEGORY_IDS,
   projectCategorySchema,
   projectSchema,
   skillCategorySchema,
@@ -17,7 +16,7 @@ const NOT_FOUND = { message: 'Élément introuvable' };
 
 type CollectionOptions = {
   path: string;
-  collection: Exclude<CollectionName, 'projectCategories'>;
+  collection: CollectionName;
   schema: z.ZodObject;
   tag: string;
 };
@@ -68,41 +67,13 @@ const registerCollection = (base: FastifyInstance, { path, collection, schema, t
   });
 };
 
-const registerProjectCategories = (base: FastifyInstance): void => {
-  const app = base.withTypeProvider<ZodTypeProvider>();
-  const tags = ['Catégories de projets'];
-  const security = [{ session: [] }];
-
-  app.get('/project-categories', { schema: { tags, security, summary: 'Liste les trois catégories' } }, async () =>
-    base.repo.list('projectCategories'),
-  );
-
-  app.put(
-    '/project-categories/:id',
-    {
-      schema: {
-        tags,
-        security,
-        summary: 'Remplit une des trois catégories, dont les identifiants sont fixes',
-        params: z.object({ id: z.enum(PROJECT_CATEGORY_IDS) }),
-        body: updateInput(projectCategorySchema),
-      },
-    },
-    async (request) => {
-      const { id } = request.params;
-      const category = { ...request.body, id, position: PROJECT_CATEGORY_IDS.indexOf(id) };
-      base.repo.putProjectCategory(category);
-      return category;
-    },
-  );
-};
-
 export const collectionRoutes = async (base: FastifyInstance): Promise<void> => {
   registerCollection(base, { path: 'experiences', collection: 'experiences', schema: experienceSchema, tag: 'Expériences' });
   registerCollection(base, { path: 'educations', collection: 'educations', schema: educationSchema, tag: 'Formations' });
   registerCollection(base, { path: 'projects', collection: 'projects', schema: projectSchema, tag: 'Projets' });
   registerCollection(base, { path: 'skill-categories', collection: 'skillCategories', schema: skillCategorySchema, tag: 'Compétences' });
-  registerProjectCategories(base);
+  // Une catégorie qui contient encore des projets ne se supprime pas : 409, avec leur nombre.
+  registerCollection(base, { path: 'project-categories', collection: 'projectCategories', schema: projectCategorySchema, tag: 'Catégories de projets' });
 
   base.withTypeProvider<ZodTypeProvider>().get(
     '/draft',

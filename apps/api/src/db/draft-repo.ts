@@ -29,6 +29,14 @@ export class ReorderMismatchError extends Error {
   }
 }
 
+export class CategoryInUseError extends Error {
+  statusCode = 409;
+
+  constructor(title: string, count: number) {
+    super(`« ${title} » contient encore ${count} ${count > 1 ? 'projets' : 'projet'} : changez-les de catégorie avant de la supprimer`);
+  }
+}
+
 type Collections = {
   experiences: Experience;
   educations: Education;
@@ -56,7 +64,6 @@ export type DraftRepo = {
   update<C extends CollectionName>(collection: C, id: string, input: Omit<Collections[C], 'id' | 'position'>): Collections[C] | null;
   remove(collection: CollectionName, id: string): boolean;
   reorder(collection: CollectionName, ids: string[]): void;
-  putProjectCategory(category: ProjectCategory): void;
   /** Exécute `work` en une seule transaction : une erreur annule tout. */
   transaction<T>(work: () => T): T;
 };
@@ -114,8 +121,15 @@ export const createDraftRepo = (db: Db): DraftRepo => {
       db.update(table(collection)).set(input as never).where(eq(table(collection).id, id)).run();
       return get(collection, id);
     },
-    remove: (collection, id) =>
-      db.delete(table(collection)).where(eq(table(collection).id, id)).run().changes > 0,
+    remove: (collection, id) => {
+      // Un projet a toujours une catégorie : celle qui en contient encore ne peut pas disparaître.
+      if (collection === 'projectCategories') {
+        const category = get('projectCategories', id);
+        const count = list('projects').filter((project) => project.categoryId === id).length;
+        if (category && count > 0) throw new CategoryInUseError(category.title, count);
+      }
+      return db.delete(table(collection)).where(eq(table(collection).id, id)).run().changes > 0;
+    },
     reorder: (collection, ids) => {
       const existing = list(collection).map((row) => (row as { id: string }).id);
       const sameIds = ids.length === existing.length && new Set(ids).size === ids.length && ids.every((id) => existing.includes(id));
@@ -125,9 +139,6 @@ export const createDraftRepo = (db: Db): DraftRepo => {
           tx.update(table(collection)).set({ position }).where(eq(table(collection).id, id)).run();
         });
       });
-    },
-    putProjectCategory: (category) => {
-      db.insert(projectCategories).values(category).onConflictDoUpdate({ target: projectCategories.id, set: category }).run();
     },
     transaction: (work) => db.$client.transaction(work)(),
   };

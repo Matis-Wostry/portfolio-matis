@@ -154,6 +154,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .list-meta { display: block; font-size: 16px; color: var(--muted); }
 .list-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .flag { padding: 0 8px; font-size: 16px; color: var(--side); background: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.btn.chip[aria-pressed='true'] { color: var(--side); background: var(--accent); border-color: var(--accent); }
+.category-list { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.dialog .category-list { padding: 0; }
+.category-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 
 /* Médias */
 .shots { display: grid; gap: 12px; }
@@ -166,6 +171,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* Fenêtres */
 .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: rgb(20 15 18 / .75); }
 .dialog { display: grid; gap: 12px; width: min(480px, 100%); padding: 18px; background: var(--panel); border: 2px solid var(--accent); box-shadow: 4px 4px 0 var(--side); }
+.dialog.wide { width: min(760px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; }
 .dialog h2 { font-size: 22px; color: var(--accent); }
 .dialog form { display: grid; gap: 12px; }
 .dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }

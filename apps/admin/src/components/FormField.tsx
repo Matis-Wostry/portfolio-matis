@@ -54,14 +54,17 @@ type SelectProps<T extends string> = Common & {
   value: T;
   options: readonly { value: T; label: string }[];
   onChange(value: T): void;
+  /** Le texte affiché tant que rien n'est choisi ; il ne peut pas être choisi ensuite. */
+  placeholder?: string;
 };
 
-export const SelectField = <T extends string>({ label, value, options, onChange, error }: SelectProps<T>) => {
+export const SelectField = <T extends string>({ label, value, options, onChange, error, placeholder }: SelectProps<T>) => {
   const id = useId();
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
       <select id={id} value={value} aria-invalid={error ? true : undefined} aria-describedby={describedBy(id, error, undefined)} onChange={(event) => onChange(event.target.value as T)}>
+        {placeholder && <option value="" disabled>{placeholder}</option>}
         {options.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>
         ))}

@@ -78,8 +78,8 @@ Le style reprend les couleurs et la police du jeu. Tout est en graisse normale, 
 | Routes | Accès | Rôle |
 |---|---|---|
 | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` | | Connexion |
-| `/admin/projects`, `experiences`, `educations`, `skill-categories` | Session | Lire, créer, modifier, supprimer, réordonner |
-| `/admin/project-categories`, `profile`, `contact`, `draft` | Session | Catégories fixes, fiches uniques, brouillon complet |
+| `/admin/projects`, `experiences`, `educations`, `skill-categories`, `project-categories` | Session | Lire, créer, modifier, supprimer, réordonner ; une catégorie qui contient des projets ne se supprime pas |
+| `/admin/profile`, `contact`, `draft` | Session | Fiches uniques, brouillon complet |
 | `/admin/media` | Session | Envoyer, lister, lire, supprimer un média |
 | `POST /admin/publish`, `GET /admin/status` | Session | Publier, voir l'état des déploiements |
 | `GET /public/snapshot`, `GET /public/media/:file` | Public | Dernier contenu publié, sans brouillon ni projet masqué |

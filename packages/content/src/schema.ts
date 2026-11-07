@@ -82,11 +82,8 @@ export const educationSchema = z.object({
   position,
 });
 
-export const PROJECT_CATEGORY_IDS = ['pro', 'ecole', 'perso'] as const;
-const projectCategoryId = z.enum(PROJECT_CATEGORY_IDS);
-
 export const projectCategorySchema = z.object({
-  id: projectCategoryId,
+  id: slugSchema,
   title: requiredText,
   description: requiredText,
   position,
@@ -95,7 +92,7 @@ export const projectCategorySchema = z.object({
 export const projectSchema = z.object({
   id: slugSchema,
   title: requiredText,
-  categoryId: projectCategoryId,
+  categoryId: slugSchema,
   summary: requiredText,
   context: optionalText,
   work: optionalText,

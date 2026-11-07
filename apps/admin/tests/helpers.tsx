@@ -25,7 +25,7 @@ export type FakeState = {
 type Call = { method: string; path: string; body: unknown };
 type Canned = { status: number; body?: unknown } | 'network-error' | (() => Promise<{ status: number; body?: unknown }>);
 
-const COLLECTIONS = ['experiences', 'educations', 'projects', 'skill-categories'] as const;
+const COLLECTIONS = ['experiences', 'educations', 'projects', 'skill-categories', 'project-categories'] as const;
 type CollectionName = (typeof COLLECTIONS)[number];
 
 export const CATEGORIES: Row[] = [
@@ -150,16 +150,7 @@ export const createFakeApi = (over: Partial<FakeState> = {}) => {
       return { status: 204 };
     }
 
-    const categoryMatch = /^\/admin\/project-categories(?:\/([^/]+))?$/.exec(path);
-    if (categoryMatch) {
-      if (method === 'GET') return { status: 200, body: state['project-categories'] };
-      const id = categoryMatch[1] as string;
-      const row = { ...(body as object), id, position: ['pro', 'ecole', 'perso'].indexOf(id) } as Row;
-      state['project-categories'] = [...state['project-categories'].filter((c) => c.id !== id), row].sort((a, b) => a.position - b.position);
-      return { status: 200, body: row };
-    }
-
-    const match = /^\/admin\/(experiences|educations|projects|skill-categories)(?:\/([^/]+))?$/.exec(path);
+    const match = /^\/admin\/(experiences|educations|projects|skill-categories|project-categories)(?:\/([^/]+))?$/.exec(path);
     if (match) {
       const collection = match[1] as CollectionName;
       const key = match[2];
@@ -186,6 +177,8 @@ export const createFakeApi = (over: Partial<FakeState> = {}) => {
         return { status: 200, body: row };
       }
       if (method === 'DELETE') {
+        const used = collection === 'project-categories' ? state.projects.filter((p) => p.categoryId === key).length : 0;
+        if (used > 0) return { status: 409, body: { message: `« ${String(rows[index]?.title)} » contient encore ${used} projets` } };
         rows.splice(index, 1);
         return { status: 204 };
       }
