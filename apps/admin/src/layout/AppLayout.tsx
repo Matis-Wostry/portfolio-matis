@@ -8,6 +8,7 @@ import { DRAFT_QUERY } from '../app/queries.ts';
 import { DraftBadge } from '../components/DraftBadge.tsx';
 import { PublishButton } from '../components/PublishButton.tsx';
 import { SitesStatus } from '../components/SitesStatus.tsx';
+import { UnsavedGuard } from '../components/UnsavedGuard.tsx';
 import { LoginPage } from '../pages/LoginPage.tsx';
 
 export type RouteHandle = { section: string };
@@ -74,6 +75,7 @@ const Shell = () => {
           <Outlet />
         </div>
       </section>
+      <UnsavedGuard />
     </div>
   );
 };

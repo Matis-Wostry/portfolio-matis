@@ -120,7 +120,10 @@ export const createFakeApi = (over: Partial<FakeState> = {}) => {
       };
     }
     if (path === '/admin/status') return { status: 200, body: state.status };
-    if (path === '/admin/publish') return { status: 200, body: { snapshotId: 1, deploys: [] } };
+    if (path === '/admin/publish') {
+      state.status = { ...state.status, hasUnpublishedChanges: false, lastPublishedAt: '2026-11-07T08:00:00.000Z' };
+      return { status: 200, body: { snapshotId: 1, deploys: [] } };
+    }
 
     for (const singleton of ['profile', 'contact'] as const) {
       if (path === `/admin/${singleton}`) {
