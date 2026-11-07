@@ -46,7 +46,7 @@ const Form = ({ initial }: { initial: Values }) => {
   const setSearch = (key: keyof Values['search'], value: string) => setField('search', { ...values.search, [key]: value });
 
   return (
-    <form className="form single" onSubmit={(event) => void form.submit(event)} noValidate>
+    <form className="form full" onSubmit={(event) => void form.submit(event)} noValidate>
       <div className="form-col">
         <div className="form-row">
           <TextField label="Nom" value={values.name} error={errorFor('name')} onChange={(name) => setField('name', name)} />

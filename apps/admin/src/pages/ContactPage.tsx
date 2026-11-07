@@ -17,7 +17,7 @@ const Form = ({ initial }: { initial: Contact }) => {
   });
   const { values, setField, errorFor } = form;
   return (
-    <form className="form single" onSubmit={(event) => void form.submit(event)} noValidate>
+    <form className="form full" onSubmit={(event) => void form.submit(event)} noValidate>
       <div className="form-col">
         <div className="form-row">
           <TextField label="Email" value={values.email} error={errorFor('email')} onChange={(email) => setField('email', email)} />
