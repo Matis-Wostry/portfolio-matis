@@ -92,6 +92,30 @@ describe('projets', () => {
     expect(many()).not.toContain('Projets école');
   });
 
+  test('un onglet par catégorie, avec son nombre de projets, dans l’ordre des catégories', () => {
+    const html = many();
+    expect(html).toContain('<div class="project-tabs" role="tablist" aria-label="Catégories de projets">');
+    const tabs = [...html.matchAll(/<button type="button" class="project-tab" role="tab" id="([^"]+)" aria-controls="([^"]+)">([^<]+)<span class="project-tab-count">(\d+)<\/span><\/button>/g)];
+    expect(tabs.map((tab) => [tab[1], tab[2], tab[3]?.trim(), tab[4]])).toEqual([
+      ['onglet-pro', 'projets-pro', 'Projets pro', '1'],
+      ['onglet-perso', 'projets-perso', 'Projets perso', '2'],
+    ]);
+  });
+
+  test('chaque catégorie est le panneau de son onglet', () => {
+    const html = many();
+    expect(html).toContain('<div class="project-category" role="tabpanel" id="projets-pro" aria-labelledby="onglet-pro">');
+    expect(html).toContain('<div class="project-category" role="tabpanel" id="projets-perso" aria-labelledby="onglet-perso">');
+  });
+
+  test('onglets et panneaux sont dans un même bloc que le script du site reconnaît', () => {
+    expect(many()).toMatch(/^<div class="project-browser" data-project-tabs>/);
+  });
+
+  test('sans projet, ni onglets ni bloc vide', () => {
+    expect(render({ projects: [] }).projects).toBe('');
+  });
+
   test('un champ vide n’affiche rien : ni <details>, ni libellé orphelin', () => {
     const html = render().projects;
     expect(html).not.toContain('<details');
@@ -148,10 +172,18 @@ describe('autres sections', () => {
     expect(html).toContain('<p class="work-style-proof">En freelance.</p>');
   });
 
-  test('compétences en mots-clés, par catégorie', () => {
+  test('compétences : une carte par catégorie, avec son titre, son nombre et ses mots-clés', () => {
     const html = render().skills;
-    expect(html).toContain('<h3>Langages</h3>');
-    expect(html).toContain('<li class="badge">HTML</li>');
+    expect(html).toContain('<div class="skill-card">');
+    expect(html).toContain('<h3 class="skill-card-title">Langages</h3>');
+    expect(html).toContain('<span class="skill-card-count">2</span>');
+    expect(html).toContain('<ul class="skill-tags">');
+    expect(html).toContain('<li class="skill-tag">HTML</li>');
+  });
+
+  test('une catégorie de compétences vide n’a pas de carte', () => {
+    const html = render({ skillCategories: [{ id: 'vide', title: 'Vide', skills: [], position: 0 }] }).skills;
+    expect(html).toBe('');
   });
 
   test('formations avec leur détail', () => {
