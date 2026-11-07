@@ -175,9 +175,14 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
   return [experience, ...jeu.experiences].map((e, position) => ({ ...e, position }));
 };
 
-/** Les sites WordPress de clients du freelance, que le jeu présente comme projets pro. Demande de Matis du 2026-11-08. */
-const FREELANCE_SUMMARY = 'Missions SEO pour Le MieuxDisant, et sites WordPress pour d’autres clients.';
-const FREELANCE_SITES = 'Création des sites WordPress de MB Ventilation et MB Home';
+/**
+ * Le freelance a un seul commanditaire, Le MieuxDisant, pour le SEO comme pour les sites (dont MB Ventilation et MB Home,
+ * projets pro du jeu). Matis utilise SE Ranking, pas SEMrush. Précisions de Matis du 2026-11-08.
+ */
+const FREELANCE_COMPANY = 'Freelance – Le MieuxDisant';
+const FREELANCE_SUMMARY = 'Missions SEO et création de sites WordPress pour Le MieuxDisant.';
+const FREELANCE_SITES = 'Création de sites WordPress pour Le MieuxDisant, dont MB Ventilation et MB Home';
+const TECH_RENAMES: Record<string, string> = { SEMrush: 'SE Ranking' };
 
 /** L'alternance chez Octoplus, décrite par Matis le 2026-11-08 : du développement full-stack, la création d'un SaaS. */
 const OCTOPLUS_DETAILS = {
@@ -208,11 +213,13 @@ const withClassiqueMissions = (experiences: Experience[], classique: ClassiqueFa
     if (experience.kind === 'freelance') {
       const filled = fill(experience, fromClassique(/freelance/i));
       if (experience.missions.length > 0) return filled;
+      const techs = filled.techs.map((tech) => TECH_RENAMES[tech] ?? tech);
       return {
         ...filled,
-        summary: filled.summary ?? FREELANCE_SUMMARY,
+        company: FREELANCE_COMPANY,
+        summary: experience.summary ?? FREELANCE_SUMMARY,
         missions: [...filled.missions, FREELANCE_SITES],
-        techs: filled.techs.includes('WordPress') ? filled.techs : [...filled.techs, 'WordPress'],
+        techs: techs.includes('WordPress') ? techs : [...techs, 'WordPress'],
       };
     }
     if (/mieuxdisant/i.test(experience.company)) return fill(experience, fromClassique(/mieuxdisant/i, /freelance/i));

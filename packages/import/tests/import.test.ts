@@ -57,7 +57,7 @@ describe('proposition', () => {
     expect(content.experiences).toEqual([
       expect.objectContaining({ id: 'smart-informatique', kind: 'stage', position: 0 }),
       expect.objectContaining({ id: 'le-mieuxdisant', title: 'Intégrateur web', company: 'Le MieuxDisant', start: '2024', end: '2025', position: 1 }),
-      expect.objectContaining({ id: 'freelance', title: 'Développeur et SEO', company: 'Freelance', kind: 'freelance', start: '2025', end: '2027', position: 2 }),
+      expect.objectContaining({ id: 'freelance', title: 'Développeur et SEO', company: 'Freelance – Le MieuxDisant', kind: 'freelance', start: '2025', end: '2027', position: 2 }),
     ]);
   });
 
@@ -117,15 +117,19 @@ describe('proposition', () => {
     });
   });
 
-  test('le freelance reprend les missions SEO du classique et ajoute les sites faits pour d’autres clients', () => {
+  test('le freelance, pour Le MieuxDisant, reprend les missions SEO du classique et ajoute les sites créés', () => {
     const freelance = content.experiences.find((e) => e.id === 'freelance');
-    expect(freelance?.summary).toBe('Missions SEO pour Le MieuxDisant, et sites WordPress pour d’autres clients.');
+    expect(freelance?.company).toBe('Freelance – Le MieuxDisant');
+    expect(freelance?.summary).toBe('Missions SEO et création de sites WordPress pour Le MieuxDisant.');
     expect(freelance?.missions).toEqual([
       'Optimisation continue de sites web',
       'Production de contenus optimisés SEO',
-      'Création des sites WordPress de MB Ventilation et MB Home',
+      'Création de sites WordPress pour Le MieuxDisant, dont MB Ventilation et MB Home',
     ]);
-    expect(freelance?.techs).toEqual(['SEO', 'SEMrush', 'WordPress']);
+  });
+
+  test('SE Ranking remplace SEMrush dans les technos du freelance', () => {
+    expect(content.experiences.find((e) => e.id === 'freelance')?.techs).toEqual(['SEO', 'SE Ranking', 'WordPress']);
   });
 
   test('l’alternance chez Octoplus décrit la création d’un SaaS, sans technos inventées', async () => {
