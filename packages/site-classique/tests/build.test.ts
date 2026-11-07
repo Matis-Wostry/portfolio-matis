@@ -77,6 +77,13 @@ describe('génération depuis l’API', () => {
     expect(readdirSync(outDir).sort()).toEqual(['assets', 'index.html', 'script', 'style']);
   });
 
+  test('les autres pages HTML du site sont publiées telles quelles', async () => {
+    writeFileSync(join(siteDir, 'politique-de-confidentialite.html'), '<p>Politique</p>');
+    await buildSite({ siteDir, outDir, source: { api: await serve(snapshot()) } });
+    expect(readFileSync(join(outDir, 'politique-de-confidentialite.html'), 'utf8')).toBe('<p>Politique</p>');
+    expect(existsSync(join(outDir, 'README.md'))).toBe(false);
+  });
+
   test('le CV publié est écrit à assets/cv/CV_Matis_Wostry.pdf', async () => {
     const body = snapshot({ profile: { ...content().profile, cvFile: CV } });
     await buildSite({ siteDir, outDir, source: { api: await serve(body, { [CV]: 'nouveau CV' }) } });
