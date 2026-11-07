@@ -142,6 +142,16 @@ importers:
         specifier: ^3.2.7
         version: 3.2.7(@types/node@24.19.2)(jsdom@31.0.0)(tsx@4.23.15)(yaml@2.9.1)
 
+  packages/site-classique:
+    dependencies:
+      '@portfolio-matis/content':
+        specifier: workspace:*
+        version: link:../content
+    devDependencies:
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@24.19.2)(jsdom@31.0.0)(tsx@4.23.15)(yaml@2.9.1)
+
 packages:
 
   '@adobe/css-tools@4.5.0':
