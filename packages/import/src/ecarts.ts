@@ -1,5 +1,6 @@
-import type { DraftContent } from '@portfolio-matis/content';
+import { draftContentSchema, type DraftContent } from '@portfolio-matis/content';
 import type { ClassiqueFacts } from './classique.ts';
+import { parsePeriod, slugify } from './text.ts';
 
 export type Ecart = { subject: string; label: string; jeu: string; classique: string };
 
@@ -32,7 +33,15 @@ export const buildEcarts = (jeu: DraftContent, classique: ClassiqueFacts): Ecart
   const github = jeu.contact.links.find((l) => l.href.includes('github.com'))?.href ?? ABSENT;
   const chambre = jeu.projects.find((p) => p.id === 'chambre-du-dev');
 
+  const { search } = jeu.profile;
+
   return [
+    {
+      subject: 'a-propos',
+      label: 'Texte « À propos », repris du classique : à comparer à la recherche du jeu',
+      jeu: `${search.contractType}, ${search.duration}, dès ${search.start}`,
+      classique: classique.about || ABSENT,
+    },
     { subject: 'email', label: 'Email', jeu: jeu.contact.email, classique: classique.email },
     { subject: 'github', label: 'GitHub', jeu: github, classique: classique.github },
     {
@@ -104,8 +113,44 @@ export const buildEcarts = (jeu: DraftContent, classique: ClassiqueFacts): Ecart
   ];
 };
 
+const samePeriod = (a: { start: string; end: string | null }, b: { start: string; end: string | null }): boolean =>
+  a.start === b.start && a.end === b.end;
+
+const withClassiqueDetails = (jeu: DraftContent, classique: ClassiqueFacts): DraftContent['educations'] => {
+  const details = classique.educations.map((education) => {
+    const match = jeu.educations.find((e) => samePeriod(e, parsePeriod(education.period)));
+    if (!match) throw new Error(`Formation du classique sans équivalent dans le jeu : « ${education.degree} »`);
+    return { id: match.id, details: education.details };
+  });
+  return jeu.educations.map((e) => ({ ...e, details: details.find((d) => d.id === e.id)?.details ?? e.details }));
+};
+
+const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): DraftContent['experiences'] => {
+  const stage = classique.experiences.find((e) => /smart informatique/i.test(e.company));
+  if (!stage) return jeu.experiences;
+  const experience = {
+    id: slugify(stage.company),
+    title: stage.title,
+    company: stage.company,
+    kind: 'stage' as const,
+    ...parsePeriod(stage.period),
+    summary: stage.summary || null,
+    missions: stage.missions,
+    techs: stage.techs,
+    position: 0,
+  };
+  // Le parcours va du plus ancien au plus récent, et ce stage précède l'alternance.
+  return [experience, ...jeu.experiences].map((e, position) => ({ ...e, position }));
+};
+
+/** Le contenu du jeu, complété par ce que Matis a choisi de reprendre du site classique. */
 export const buildProposal = (jeu: DraftContent, classique: ClassiqueFacts): { content: DraftContent; ecarts: Ecart[] } => ({
-  content: jeu,
+  content: draftContentSchema.parse({
+    ...jeu,
+    profile: { ...jeu.profile, about: classique.about || null, softSkills: classique.softSkills },
+    experiences: withSmartInformatique(jeu, classique),
+    educations: withClassiqueDetails(jeu, classique),
+  }),
   ecarts: buildEcarts(jeu, classique),
 });
 
@@ -113,7 +158,7 @@ export const renderEcarts = (ecarts: Ecart[]): string => {
   const sections = ecarts.map((e) => `## ${e.label}\n\n- **Jeu :** ${e.jeu}\n- **Site classique :** ${e.classique}\n`);
   return [
     '# Écarts entre les deux sites\n',
-    'La proposition reprend le contenu du jeu. Ces différences sont à arbitrer avant toute publication.\n',
+    'La proposition reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations, le texte « À propos » et les savoir-être du site classique. Les valeurs du jeu priment pour le reste. À relire avant toute publication.\n',
     ...sections,
   ].join('\n');
 };

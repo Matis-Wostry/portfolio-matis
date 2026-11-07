@@ -58,7 +58,7 @@ export const experienceSchema = z.object({
   id: slugSchema,
   title: requiredText,
   company: requiredText,
-  kind: z.enum(['pro', 'stage', 'freelance']),
+  kind: z.enum(['pro', 'stage', 'alternance', 'freelance']),
   start: periodSchema,
   end: periodSchema.nullable().default(null),
   summary: optionalText,

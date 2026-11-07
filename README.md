@@ -63,7 +63,7 @@ curl -b cookies.txt -X POST -H "Origin: http://localhost:5173" http://localhost:
 curl http://localhost:3000/public/snapshot
 ```
 
-`pnpm import:jeu` suppose que les dépôts `jeu` et `classique` sont à côté de celui-ci. Il écrit dans `import/`, ignoré par Git : `proposition.json` reprend le contenu du jeu, et `ecarts.md` liste ce qui diffère du site classique.
+`pnpm import:jeu` suppose que les dépôts `jeu` et `classique` sont à côté de celui-ci. Il écrit dans `import/`, ignoré par Git : `proposition.json` reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations, le texte « À propos » et les savoir-être du site classique. `ecarts.md` liste ce qui diffère entre les deux sites.
 
 ## L'API
 

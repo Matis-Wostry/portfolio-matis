@@ -68,6 +68,16 @@ describe('identifiants et périodes', () => {
     expect(periodSchema.safeParse(period).success).toBe(false);
   });
 
+  test.each(['pro', 'stage', 'alternance', 'freelance'])('accepte le type d’expérience %s', (kind) => {
+    const e = { id: 'a', title: 'Dev', company: 'X', kind, start: '2025', position: 0 };
+    expect(experienceSchema.safeParse(e).success).toBe(true);
+  });
+
+  test('refuse un type d’expérience inconnu', () => {
+    const e = { id: 'a', title: 'Dev', company: 'X', kind: 'cdi', start: '2025', position: 0 };
+    expect(experienceSchema.safeParse(e).success).toBe(false);
+  });
+
   test('une expérience en cours a une fin nulle et son résumé est facultatif', () => {
     const e = experienceSchema.parse({ id: 'a', title: 'Dev', company: 'X', kind: 'pro', start: '2025', end: null, position: 0 });
     expect(e).toMatchObject({ end: null, summary: null, missions: [], techs: [] });

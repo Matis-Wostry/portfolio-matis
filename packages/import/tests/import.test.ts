@@ -2,8 +2,11 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { draftContentSchema, type DraftContent } from '@portfolio-matis/content';
+// @ts-expect-error Le module de données du jeu est du JavaScript sans types.
+import { PORTFOLIO as jeuPortfolio } from './fixtures/jeu/src/data/portfolio.js';
 import {
   buildProposal,
+  convertJeu,
   parsePeriod,
   readClassique,
   readJeu,
@@ -52,9 +55,23 @@ describe('proposition', () => {
   test('sépare le parcours en expériences et formations', () => {
     expect(content.educations.map((e) => e.degree)).toEqual(['BUT MMI']);
     expect(content.experiences).toEqual([
-      expect.objectContaining({ id: 'le-mieuxdisant', title: 'Intégrateur web', company: 'Le MieuxDisant', kind: 'pro', start: '2024', end: '2025' }),
-      expect.objectContaining({ id: 'freelance', title: 'Développeur et SEO', company: 'Freelance', kind: 'freelance', start: '2025', end: '2027' }),
+      expect.objectContaining({ id: 'smart-informatique', kind: 'stage', position: 0 }),
+      expect.objectContaining({ id: 'le-mieuxdisant', title: 'Intégrateur web', company: 'Le MieuxDisant', start: '2024', end: '2025', position: 1 }),
+      expect.objectContaining({ id: 'freelance', title: 'Développeur et SEO', company: 'Freelance', kind: 'freelance', start: '2025', end: '2027', position: 2 }),
     ]);
+  });
+
+  test('une alternance du jeu garde son type', () => {
+    expect(content.experiences.find((e) => e.id === 'le-mieuxdisant')?.kind).toBe('alternance');
+  });
+
+  test('une expérience du jeu qui n’est ni alternance ni freelance reste de type pro', () => {
+    const entry = { period: '2024–2025', kind: 'pro', title: 'Acme', place: 'Développeur' };
+    const converted = convertJeu({
+      ...jeuPortfolio,
+      about: { persona: { ...jeuPortfolio.about.persona, timeline: [entry] } },
+    });
+    expect(converted.experiences[0]?.kind).toBe('pro');
   });
 
   test('déduit la recherche du statut du jeu', () => {
@@ -79,24 +96,63 @@ describe('proposition', () => {
     expect(content.skillCategories[1]).toEqual({ id: 'donnees-api', title: 'Données & API', skills: ['SQL', 'MongoDB'], position: 1 });
   });
 
-  test('n’invente aucun texte absent du jeu', () => {
-    expect(content.profile.about).toBeNull();
-    expect(content.profile.softSkills).toEqual([]);
-    expect(content.experiences[0]).toMatchObject({ summary: null, missions: [], techs: [] });
+  test('n’invente aucun texte absent des deux sites', () => {
+    expect(content.experiences.find((e) => e.id === 'le-mieuxdisant')).toMatchObject({ summary: null, missions: [], techs: [] });
   });
 
-  test('ne reprend pas ce qui n’existe que sur le classique', () => {
-    expect(content.experiences.map((e) => e.company)).not.toContain('Smart Informatique');
+  test('reprend le stage Smart Informatique du classique, avec ses missions et ses technos', () => {
+    expect(content.experiences[0]).toEqual({
+      id: 'smart-informatique',
+      title: 'Stage – Développeur web',
+      company: 'Smart Informatique',
+      kind: 'stage',
+      start: '2024',
+      end: '2024',
+      summary: 'Stage de 8 semaines',
+      missions: ['Création d’un site WordPress', 'Tests de compatibilité'],
+      techs: ['WordPress', 'Canva'],
+      position: 0,
+    });
+  });
+
+  test('reprend le détail des formations, rapproché par les dates, en gardant le titre du jeu', () => {
+    expect(content.educations[0]).toMatchObject({
+      degree: 'BUT MMI',
+      school: 'IUT Dijon-Auxerre',
+      details: ['Développement Web'],
+    });
+  });
+
+  test('une formation du classique sans équivalent interrompt l’import plutôt que de la perdre', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    expect(() => buildProposal({ ...jeu, educations: [] }, classique)).toThrow(/BUT MMI/);
+  });
+
+  test('reprend le texte « À propos » et les savoir-être du classique', () => {
+    expect(content.profile.about).toBe('Je recherche une collaboration de deux ans.');
+    expect(content.profile.softSkills).toEqual(['Autonomie', 'Patient']);
+  });
+
+  test('ne reprend ni le projet ni les compétences qui restent à arbitrer', () => {
     expect(content.projects.map((p) => p.title)).not.toContain('Création de mon portfolio');
+    expect(content.skillCategories.flatMap((c) => c.skills)).not.toContain('MyPoseo');
   });
 });
 
 describe('écarts', () => {
-  test('les 13 sujets de la spec sont signalés', () => {
+  test('les 13 sujets de la spec et le texte « À propos » sont signalés', () => {
     expect(ecarts.map((e) => e.subject).sort()).toEqual(
-      ['chambre-du-dev', 'competences', 'creation-portfolio', 'email', 'formations', 'freelance', 'github',
+      ['a-propos', 'chambre-du-dev', 'competences', 'creation-portfolio', 'email', 'formations', 'freelance', 'github',
         'mieuxdisant', 'octoplus', 'projets', 'recherche', 'savoir-etre', 'smart-informatique'].sort(),
     );
+  });
+
+  test('le texte « À propos » repris est mis en regard de la recherche du jeu, qu’il peut contredire', () => {
+    expect(ecart('a-propos')).toMatchObject({
+      jeu: 'Alternance, 1 an, dès Septembre 2027',
+      classique: 'Je recherche une collaboration de deux ans.',
+    });
   });
 
   test('les deux valeurs de l’email sont présentes', () => {
@@ -120,7 +176,7 @@ describe('écarts', () => {
 
   test('renderEcarts donne une section par sujet, avec les deux versions', () => {
     const markdown = renderEcarts(ecarts);
-    expect(markdown.match(/^## /gm)).toHaveLength(13);
+    expect(markdown.match(/^## /gm)).toHaveLength(14);
     expect(markdown).toContain('matis.wostry@crea-insee.com');
   });
 });

@@ -82,7 +82,7 @@ docker compose exec api node apps/api/src/seed.ts /tmp/proposition.json
 
 Le contenu arrive dans le **brouillon** : rien n'est publié. La commande refuse une base qui contient déjà du contenu.
 
-> **À relire avant de publier.** `import/ecarts.md` liste ce qui diffère du site classique, dont des éléments absents du jeu : le stage chez Smart Informatique, le détail des formations, le texte « À propos » et les savoir-être.
+> **À relire avant de publier.** `import/ecarts.md` liste ce qui diffère entre les deux sites. Le texte « À propos » vient du site classique tel quel : il peut contredire la recherche reprise du jeu. Le projet « Création de mon portfolio » et les compétences absentes du jeu ne sont pas repris.
 
 ## 7. Plus tard : déclencher les sites
 

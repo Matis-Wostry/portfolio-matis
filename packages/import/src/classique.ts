@@ -5,9 +5,9 @@ export type ClassiqueFacts = {
   email: string;
   github: string;
   availability: string[];
-  experiences: { title: string; company: string; period: string }[];
+  experiences: { title: string; company: string; period: string; summary: string; missions: string[]; techs: string[] }[];
   projects: { title: string; summary: string; hrefs: string[] }[];
-  educations: { degree: string; school: string; details: string[] }[];
+  educations: { degree: string; school: string; period: string; details: string[] }[];
   skillLines: string[];
   softSkills: string[];
 };
@@ -29,6 +29,9 @@ export const readClassique = (html: string): ClassiqueFacts => {
       title: textOf(item, '.timeline-title'),
       company: textOf(item, '.timeline-company'),
       period: textOf(item, '.timeline-date'),
+      summary: textsOf(item, '.timeline-description p').join(' '),
+      missions: textsOf(item, '.timeline-description li'),
+      techs: textsOf(item, '.badge'),
     })),
     projects: root.querySelectorAll('.project-item').map((item) => ({
       title: textOf(item, '.project-title'),
@@ -38,6 +41,7 @@ export const readClassique = (html: string): ClassiqueFacts => {
     educations: root.querySelectorAll('.education-item').map((item) => ({
       degree: textOf(item, '.education-degree'),
       school: textOf(item, '.education-school'),
+      period: textOf(item, '.education-date'),
       details: textsOf(item, '.education-details li'),
     })),
     skillLines: textsOf(root, '.skill-list li'),

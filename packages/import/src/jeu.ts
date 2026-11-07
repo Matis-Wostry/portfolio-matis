@@ -50,13 +50,18 @@ const parseSearch = (status: string, location: string) => {
   return { contractType: 'Alternance', duration, start: `${month} ${startMatch[2]}`, location };
 };
 
+const experienceKind = (title: string): 'alternance' | 'freelance' | 'pro' => {
+  if (/alternance/i.test(title)) return 'alternance';
+  return /freelance/i.test(title) ? 'freelance' : 'pro';
+};
+
 const toExperience = (entry: TimelineEntry, position: number) => {
   const company = entry.title.split(' · ').at(-1) ?? entry.title;
   return {
     id: slugify(company),
     title: entry.place,
     company,
-    kind: /freelance/i.test(entry.title) ? ('freelance' as const) : ('pro' as const),
+    kind: experienceKind(entry.title),
     ...parsePeriod(entry.period),
     summary: null,
     missions: [],
