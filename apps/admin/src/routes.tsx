@@ -4,6 +4,7 @@ import { ContactPage } from './pages/ContactPage.tsx';
 import { EditEducationPage, EducationsPage, NewEducationPage } from './pages/EducationPages.tsx';
 import { EditExperiencePage, ExperiencesPage, NewExperiencePage } from './pages/ExperiencePages.tsx';
 import { MediaPage } from './pages/MediaPage.tsx';
+import { PreviewPage } from './pages/PreviewPage.tsx';
 import { ProfilePage } from './pages/ProfilePage.tsx';
 import { EditProjectPage, NewProjectPage } from './pages/ProjectForm.tsx';
 import { ProjectsPage } from './pages/ProjectsPage.tsx';
@@ -28,6 +29,7 @@ export const routes: RouteObject[] = [
       { path: 'presentation', handle: { section: 'Présentation' }, element: <ProfilePage /> },
       { path: 'contact', handle: { section: 'Contact' }, element: <ContactPage /> },
       { path: 'medias', handle: { section: 'Médias' }, element: <MediaPage /> },
+      { path: 'apercu', handle: { section: 'Aperçu' }, element: <PreviewPage /> },
       { path: '*', handle: { section: 'Page introuvable' }, element: <p>Cette page n’existe pas.</p> },
     ],
   },
