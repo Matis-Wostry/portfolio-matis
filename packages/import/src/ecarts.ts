@@ -31,7 +31,16 @@ const withAddedWorkStyle = (workStyle: DraftContent['profile']['workStyle']): Dr
   return [...workStyle, ...ADDED_WORK_STYLE.filter((w) => !known.has(w.quality.toLowerCase()))];
 };
 
-const normalizeHref =(href: string): string => href.trim().replace(/\/+$/, '').toLowerCase();
+/** Choix de Matis du 2026-11-07 : son adresse pro, et son code sur son Forgejo plutôt que sur GitHub. */
+const CONTACT_EMAIL = 'matiswostry.pro@gmail.com';
+const CODE_LINK = { label: 'Code source', href: 'https://git.matis-wostry.com' };
+
+const withCodeLink = (links: DraftContent['contact']['links']): DraftContent['contact']['links'] =>
+  links.some((link) => link.href.includes('github.com'))
+    ? links.map((link) => (link.href.includes('github.com') ? CODE_LINK : link))
+    : [...links, CODE_LINK];
+
+const normalizeHref = (href: string): string => href.trim().replace(/\/+$/, '').toLowerCase();
 
 const orAbsent = (values: string[]): string => (values.length ? values.join(' ; ') : ABSENT);
 
@@ -171,6 +180,7 @@ export const buildProposal = (jeu: DraftContent, classique: ClassiqueFacts): { c
   content: draftContentSchema.parse({
     ...jeu,
     profile: { ...jeu.profile, about: ABOUT_TEXT, softSkills: [], workStyle: withAddedWorkStyle(jeu.profile.workStyle) },
+    contact: { ...jeu.contact, email: CONTACT_EMAIL, links: withCodeLink(jeu.contact.links) },
     experiences: withSmartInformatique(jeu, classique),
     educations: withClassiqueDetails(jeu, classique),
     projects: jeu.projects.map((p) => (p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p)),
