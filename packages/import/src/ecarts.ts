@@ -33,7 +33,7 @@ const withAddedWorkStyle = (workStyle: DraftContent['profile']['workStyle']): Dr
 
 /** Choix de Matis du 2026-11-07 : son adresse pro, et son code sur son Forgejo plutôt que sur GitHub. */
 const CONTACT_EMAIL = 'matiswostry.pro@gmail.com';
-const CODE_LINK = { label: 'Code source', href: 'https://git.matis-wostry.com' };
+const CODE_LINK = { label: 'Git perso', href: 'https://git.matis-wostry.com' };
 
 const withCodeLink = (links: DraftContent['contact']['links']): DraftContent['contact']['links'] =>
   links.some((link) => link.href.includes('github.com'))
