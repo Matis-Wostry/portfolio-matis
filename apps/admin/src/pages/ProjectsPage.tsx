@@ -13,7 +13,7 @@ const CategoryRow = ({ id, initial }: { id: ProjectCategory['id']; initial: { ti
   const form = useEntityForm({
     initial,
     schema: updateInput(projectCategorySchema),
-    save: ((payload: object) => api.put(`/admin/project-categories/${id}`, payload)) as never,
+    save: (payload) => api.put(`/admin/project-categories/${id}`, payload),
   });
   return (
     <form className="form-col" onSubmit={(event) => void form.submit(event)} noValidate aria-label={`Catégorie ${CATEGORY_NAMES[id]}`}>

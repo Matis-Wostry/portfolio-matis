@@ -34,6 +34,13 @@ declare module 'fastify' {
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+// Les erreurs que Fastify et ses extensions renvoient en anglais.
+const FRENCH_MESSAGES: Record<string, string> = {
+  FST_ERR_CTP_INVALID_JSON_BODY: 'Le corps de la requête n’est pas un JSON valide',
+  FST_ERR_CTP_EMPTY_JSON_BODY: 'Le corps de la requête est vide',
+  FST_INVALID_MULTIPART_CONTENT_TYPE: 'La requête doit contenir un fichier',
+};
+
 const registerErrorHandler = (app: FastifyInstance): void => {
   app.setErrorHandler((error: FastifyError, request, reply) => {
     if (hasZodFastifySchemaValidationErrors(error)) {
@@ -48,7 +55,7 @@ const registerErrorHandler = (app: FastifyInstance): void => {
       request.log.error(error);
       return reply.code(status).send({ message: 'Erreur interne du serveur' });
     }
-    return reply.code(status).send({ message: error.message });
+    return reply.code(status).send({ message: FRENCH_MESSAGES[error.code] ?? error.message });
   });
 };
 

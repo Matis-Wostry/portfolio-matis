@@ -6,12 +6,12 @@ import { ReauthCancelled } from '../app/session.tsx';
 import { useHasUnsaved, useReportDirty } from '../app/unsaved.tsx';
 import { useAuthedAction } from './useAuthedAction.ts';
 
-type Options<V, R> = {
+type Options<V, R, P> = {
   initial: V;
-  schema: z.ZodType;
+  schema: z.ZodType<P>;
   /** Ce que le formulaire envoie, par exemple un texte vide devenu nul. */
   toPayload?: (values: V) => unknown;
-  save: (payload: never) => Promise<R>;
+  save: (payload: P) => Promise<R>;
   onSaved?: (result: R) => void;
   /** Fige les champs pendant l'envoi : utile à la création, qui change ensuite de page. */
   lockWhileSaving?: boolean;
@@ -31,7 +31,7 @@ export type EntityForm<V> = {
 
 const UNSAVED_MESSAGE = 'Vos modifications n’ont pas été enregistrées.';
 
-export const useEntityForm = <V, R = unknown>({ initial, schema, toPayload, save, onSaved, lockWhileSaving = false }: Options<V, R>): EntityForm<V> => {
+export const useEntityForm = <V, R = unknown, P = unknown>({ initial, schema, toPayload, save, onSaved, lockWhileSaving = false }: Options<V, R, P>): EntityForm<V> => {
   const queryClient = useQueryClient();
   const run = useAuthedAction();
   const [values, setValues] = useState<V>(initial);
@@ -79,7 +79,7 @@ export const useEntityForm = <V, R = unknown>({ initial, schema, toPayload, save
     setMessage(null);
     const sent = values;
     try {
-      const result = await run(() => save(parsed.data as never));
+      const result = await run(() => save(parsed.data));
       setBaseline(JSON.stringify(sent));
       setSaved(true);
       setSavedResult({ value: result });

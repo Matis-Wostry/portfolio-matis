@@ -40,7 +40,7 @@ const Form = ({ initial }: { initial: Values }) => {
       // Un loisir déjà publié garde son identifiant, même si son libellé change : le site y rattache son icône.
       hobbies: values.hobbies.map((hobby) => ({ ...hobby, id: hobby.id || slugify(hobby.label) })),
     }),
-    save: ((payload: object) => api.put('/admin/profile', payload)) as never,
+    save: (payload) => api.put('/admin/profile', payload),
   });
   const { values, setField, errorFor } = form;
   const setSearch = (key: keyof Values['search'], value: string) => setField('search', { ...values.search, [key]: value });
@@ -97,7 +97,8 @@ const Form = ({ initial }: { initial: Values }) => {
                   label={`Loisir ${index + 1}`}
                   hideLabel
                   value={hobby.label}
-                  error={errorFor(`hobbies.${index}.label`)}
+                  // L'identifiant se déduit du libellé : son erreur se montre donc ici, sous le libellé.
+                  error={errorFor(`hobbies.${index}.label`) ?? (errorFor(`hobbies.${index}.id`) ? 'Ce loisir doit contenir au moins une lettre ou un chiffre' : undefined)}
                   onChange={(label) => setField('hobbies', values.hobbies.map((current, i) => (i === index ? { ...current, label } : current)))}
                 />
                 <button type="button" className="btn small" aria-label={`Retirer le loisir ${index + 1}`} onClick={() => setField('hobbies', values.hobbies.filter((_, i) => i !== index))}>Retirer</button>

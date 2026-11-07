@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { insertSnapshot } from '../src/db/snapshots.ts';
 import { ADMIN_ORIGIN, createTestApp, draftContent, loginCookie, projectInput, tempDir } from './helpers.ts';
@@ -100,6 +100,16 @@ describe('envoi', () => {
     expect(file).toMatch(/^[0-9a-f-]{36}\.png$/);
     expect(originalName).toBe('evil.png');
     expect(readdirSync(mediaDir)).toEqual([file]);
+  });
+
+  test('si l’enregistrement en base échoue, le fichier écrit est retiré du disque', async () => {
+    const insert = vi.spyOn(app.db, 'insert').mockImplementationOnce(() => {
+      throw new Error('base indisponible');
+    });
+    const response = await upload('photo.png', PNG);
+    expect(response.statusCode).toBe(500);
+    expect(readdirSync(mediaDir)).toEqual([]);
+    insert.mockRestore();
   });
 
   test('une requête sans fichier répond 400', async () => {

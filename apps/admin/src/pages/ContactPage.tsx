@@ -13,7 +13,7 @@ const Form = ({ initial }: { initial: Contact }) => {
   const form = useEntityForm<Contact>({
     initial,
     schema: contactSchema,
-    save: ((payload: object) => api.put('/admin/contact', payload)) as never,
+    save: (payload) => api.put('/admin/contact', payload),
   });
   const { values, setField, errorFor } = form;
   return (

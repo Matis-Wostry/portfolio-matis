@@ -1,4 +1,4 @@
-import { createInput, projectSchema, updateInput, type Project } from '@portfolio-matis/content';
+import { projectSchema, updateInput, type Project } from '@portfolio-matis/content';
 import { api } from '../api/client.ts';
 import { CapturesPanel, type CaptureValue } from '../components/CapturesPanel.tsx';
 import { FormActions } from '../components/FormActions.tsx';
@@ -8,7 +8,7 @@ import { SlugField } from '../components/SlugField.tsx';
 import { TagsField } from '../components/TagsField.tsx';
 import { useEntityForm } from '../hooks/useEntityForm.ts';
 import { useSlugFromTitle } from '../hooks/useSlugFromTitle.ts';
-import { EntityEdit, orNull, useGoToCreated } from './entity.tsx';
+import { creationSchema, EntityEdit, orNull, useGoToCreated } from './entity.tsx';
 
 type Values = {
   id: string;
@@ -59,14 +59,14 @@ const ProjectFormBody = ({ initial, existingId }: { initial: Values; existingId?
   const goToCreated = useGoToCreated('/projets');
   const form = useEntityForm<Values, Project>({
     initial,
-    schema: existingId ? updateInput(projectSchema) : createInput(projectSchema),
+    schema: existingId ? updateInput(projectSchema) : creationSchema(projectSchema),
     toPayload: (values) => {
       if (!existingId) return withNulls(values);
       const { id: _id, ...rest } = withNulls(values);
       return rest;
     },
-    save: ((payload: object) =>
-      existingId ? api.put<Project>(`/admin/projects/${encodeURIComponent(existingId)}`, payload) : api.post<Project>('/admin/projects', payload)) as never,
+    save: (payload) =>
+      existingId ? api.put<Project>(`/admin/projects/${encodeURIComponent(existingId)}`, payload) : api.post<Project>('/admin/projects', payload),
     ...(existingId ? {} : { onSaved: goToCreated, lockWhileSaving: true }),
   });
   const { values, setField, errorFor } = form;

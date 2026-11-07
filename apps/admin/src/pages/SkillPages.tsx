@@ -1,4 +1,4 @@
-import { createInput, skillCategorySchema, updateInput, type SkillCategory } from '@portfolio-matis/content';
+import { skillCategorySchema, updateInput, type SkillCategory } from '@portfolio-matis/content';
 import { api } from '../api/client.ts';
 import { EntityList } from '../components/EntityList.tsx';
 import { FormActions } from '../components/FormActions.tsx';
@@ -7,7 +7,7 @@ import { SlugField } from '../components/SlugField.tsx';
 import { TagsField } from '../components/TagsField.tsx';
 import { useEntityForm } from '../hooks/useEntityForm.ts';
 import { useSlugFromTitle } from '../hooks/useSlugFromTitle.ts';
-import { EntityEdit, useGoToCreated } from './entity.tsx';
+import { creationSchema, EntityEdit, useGoToCreated } from './entity.tsx';
 
 type Values = { id: string; title: string; skills: string[] };
 
@@ -15,10 +15,10 @@ const Form = ({ initial, existingId }: { initial: Values; existingId?: string })
   const goToCreated = useGoToCreated('/competences');
   const form = useEntityForm<Values, SkillCategory>({
     initial,
-    schema: existingId ? updateInput(skillCategorySchema) : createInput(skillCategorySchema),
+    schema: existingId ? updateInput(skillCategorySchema) : creationSchema(skillCategorySchema),
     toPayload: ({ id, ...values }) => ({ ...(existingId ? {} : { id }), ...values }),
-    save: ((payload: object) =>
-      existingId ? api.put(`/admin/skill-categories/${encodeURIComponent(existingId)}`, payload) : api.post('/admin/skill-categories', payload)) as never,
+    save: (payload) =>
+      existingId ? api.put<SkillCategory>(`/admin/skill-categories/${encodeURIComponent(existingId)}`, payload) : api.post<SkillCategory>('/admin/skill-categories', payload),
     ...(existingId ? {} : { onSaved: goToCreated, lockWhileSaving: true }),
   });
   const { values, setField, errorFor } = form;

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '../api/client.ts';
+import { Dialog } from './Dialog.tsx';
 
 type Props = {
   onSubmit(password: string): Promise<void>;
@@ -26,9 +27,7 @@ export const ReloginDialog = ({ onSubmit, onDone, onCancel }: Props) => {
   };
 
   return (
-    <div className="overlay">
-      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="relogin-title">
-        <h2 id="relogin-title">Session expirée</h2>
+    <Dialog title="Session expirée" onClose={onCancel}>
         <p>Reconnectez-vous pour continuer. Votre saisie est conservée.</p>
         <form onSubmit={submit}>
           <div className="field">
@@ -48,7 +47,6 @@ export const ReloginDialog = ({ onSubmit, onDone, onCancel }: Props) => {
             <button type="submit" className="btn primary" disabled={busy || !password}>Se reconnecter</button>
           </div>
         </form>
-      </div>
-    </div>
+    </Dialog>
   );
 };

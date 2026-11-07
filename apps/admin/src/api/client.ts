@@ -18,7 +18,8 @@ const send = async (path: string, init: RequestInit): Promise<Response> => {
   try {
     return await fetch(`${BASE_URL}${path}`, { ...init, credentials: 'include' });
   } catch {
-    throw new ApiError(0, 'Impossible de joindre le serveur');
+    // Le navigateur ne dit pas lequel : l'API arrêtée, ou une ADMIN_ORIGIN qui fait bloquer la réponse.
+    throw new ApiError(0, 'Impossible de joindre le serveur : l’API est peut-être arrêtée, ou ADMIN_ORIGIN ne correspond pas à l’adresse de cette interface');
   }
 };
 

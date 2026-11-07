@@ -38,7 +38,7 @@ const envSchema = z.object({
   MEDIA_DIR: z.string().min(1).default('data/media'),
   ADMIN_PASSWORD_HASH: z
     .string({ error: 'obligatoire' })
-    .regex(PASSWORD_HASH_PATTERN, 'doit être le résultat exact de la commande hash-password'),
+    .regex(PASSWORD_HASH_PATTERN, 'doit être la ligne complète affichée par hash-password, qui commence par « scrypt: »'),
   SESSION_SECRET: z.string({ error: 'obligatoire' }).min(32, 'doit faire au moins 32 caractères'),
   // Ramenée à ce que le navigateur envoie dans l'en-tête Origin : sans barre finale ni chemin.
   ADMIN_ORIGIN: z.url({ error: 'doit être une adresse complète' }).transform((url) => new URL(url).origin),

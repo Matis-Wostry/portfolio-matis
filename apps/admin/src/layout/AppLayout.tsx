@@ -46,6 +46,8 @@ const LogoutButton = () => {
   );
 };
 
+const SIDEBAR_ID = 'barre-laterale';
+
 const Sidebar = ({ onNavigate, open }: { onNavigate(): void; open: boolean }) => {
   const { data } = useQuery({ queryKey: DRAFT_QUERY, queryFn: () => api.get<DraftState>('/admin/draft') });
   const links = [
@@ -59,7 +61,7 @@ const Sidebar = ({ onNavigate, open }: { onNavigate(): void; open: boolean }) =>
   ];
 
   return (
-    <aside className={open ? 'side open' : 'side'}>
+    <aside id={SIDEBAR_ID} className={open ? 'side open' : 'side'}>
       <nav aria-label="Sections">
         {links.map(({ to, label, count }) => (
           <NavLink key={to} to={to} className="nav-link" onClick={onNavigate}>
@@ -85,7 +87,7 @@ const Shell = () => {
     <div className="app">
       <div className="brand">
         <Link to="/projets" className="logo">Portfolio Matis</Link>
-        <button type="button" className="btn menu-toggle" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>Menu</button>
+        <button type="button" className="btn menu-toggle" aria-expanded={menuOpen} aria-controls={SIDEBAR_ID} onClick={() => setMenuOpen((open) => !open)}>Menu</button>
       </div>
       <Sidebar open={menuOpen} onNavigate={() => setMenuOpen(false)} />
       <section className="main">
