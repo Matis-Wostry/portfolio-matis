@@ -9,6 +9,8 @@ const occurrences = (text: string, search: string): number => text.split(search)
  */
 export const applySections = (html: string, sections: Sections): string => {
   let result = html;
+  // Les fins de ligne du gabarit sont gardées : CRLF sous Windows, LF ailleurs.
+  const eol = html.includes('\r\n') ? '\r\n' : '\n';
   for (const id of SECTIONS) {
     const open = `<!-- content:${id} -->`;
     const close = `<!-- /content:${id} -->`;
@@ -29,7 +31,7 @@ export const applySections = (html: string, sections: Sections): string => {
       const lineStart = result.lastIndexOf('\n', openAt) + 1;
       const indent = /^[ \t]*/.exec(result.slice(lineStart, openAt))?.[0] ?? '';
       const lines = body ? body.split('\n').map((line) => (line ? `${indent}${line}` : line)) : [];
-      inner = `\n${lines.map((line) => `${line}\n`).join('')}${indent}`;
+      inner = `${eol}${lines.map((line) => `${line}${eol}`).join('')}${indent}`;
     }
     result = result.slice(0, start) + inner + result.slice(end);
   }

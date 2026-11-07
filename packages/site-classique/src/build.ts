@@ -23,7 +23,8 @@ const fetchFrom = async (url: string, api: string): Promise<Response> => {
 };
 
 const readSnapshot = async (source: BuildSource): Promise<unknown> => {
-  if ('snapshotFile' in source) return JSON.parse(readFileSync(source.snapshotFile, 'utf8'));
+  // Un fichier enregistré sous Windows peut commencer par une marque d'ordre (BOM), que JSON.parse refuse.
+  if ('snapshotFile' in source) return JSON.parse(readFileSync(source.snapshotFile, 'utf8').replace(/^﻿/, ''));
   const response = await fetchFrom(`${source.api}/public/snapshot`, source.api);
   if (!response.ok) {
     const hint = response.status === 404 ? ' : aucun contenu publié pour l’instant ?' : '';

@@ -47,6 +47,13 @@ describe('marqueurs', () => {
     expect(() => applySections(html, sections())).toThrow(/interests/);
   });
 
+  test('un gabarit en fins de ligne Windows les garde partout', () => {
+    const crlf = template().replace(/\n/g, '\r\n');
+    const html = applySections(crlf, sections());
+    expect(html.replace(/\r\n/g, '')).not.toContain('\n');
+    expect(applySections(html, sections())).toBe(html);
+  });
+
   test('une section vide laisse les marqueurs seuls', () => {
     const empty = Object.fromEntries(SECTIONS.map((id) => [id, ''])) as Sections;
     expect(applySections(template(), empty)).toContain('<!-- content:goals -->\n    <!-- /content:goals -->');

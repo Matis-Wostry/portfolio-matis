@@ -136,6 +136,13 @@ describe('développement sans API', () => {
     expect(readFileSync(join(outDir, 'index.html'), 'utf8')).toContain('WOSTRY');
   });
 
+  test('un fichier d’instantané enregistré avec une marque d’ordre (BOM) est accepté', async () => {
+    const file = join(root, 'snapshot.json');
+    writeFileSync(file, `﻿${JSON.stringify(snapshot())}`);
+    await buildSite({ siteDir, outDir, source: { snapshotFile: file } });
+    expect(readFileSync(join(outDir, 'index.html'), 'utf8')).toContain('WOSTRY');
+  });
+
   test('les captures sont prises dans assets/media du site, et une capture absente est signalée sans bloquer', async () => {
     const file = join(root, 'snapshot.json');
     writeFileSync(file, JSON.stringify(withCapture()));
