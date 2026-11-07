@@ -35,7 +35,7 @@ describe('saisie pendant l’enregistrement d’une création', () => {
     const api = createFakeApi();
     let release: () => void = () => undefined;
     const gate = new Promise<void>((resolve) => { release = resolve; });
-    const { user, router } = renderApp('/projets/nouveau', api);
+    const { user, router } = renderApp('/projets/nouveau?categorie=perso', api);
     await user.type(await screen.findByLabelText('Titre'), 'Pokédex');
     await user.type(screen.getByLabelText('Résumé'), 'Une API');
     api.respondOnce('POST /admin/projects', async () => {

@@ -1,63 +1,71 @@
 import { useQuery } from '@tanstack/react-query';
-import { PROJECT_CATEGORY_IDS, projectCategorySchema, updateInput, type Project, type ProjectCategory } from '@portfolio-matis/content';
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import type { Project } from '@portfolio-matis/content';
 import { api } from '../api/client.ts';
+import { PROJECTS_QUERY } from '../app/queries.ts';
 import { EntityList } from '../components/EntityList.tsx';
-import { FormActions } from '../components/FormActions.tsx';
-import { Group, TextField } from '../components/FormField.tsx';
-import { QueryState } from '../components/QueryState.tsx';
-import { useEntityForm } from '../hooks/useEntityForm.ts';
+import { useProjectCategories } from '../hooks/useProjectCategories.ts';
+import { ProjectCategoriesDialog } from './ProjectCategoriesDialog.tsx';
 
-const CATEGORY_NAMES: Record<ProjectCategory['id'], string> = { pro: 'Pro', ecole: 'École', perso: 'Perso' };
+/** Le filtre des projets dont la catégorie n'existe pas : le tiret bas n'est jamais dans un identifiant. */
+const NO_CATEGORY = '_aucune';
+const PARAM = 'categorie';
 
-const CategoryRow = ({ id, initial }: { id: ProjectCategory['id']; initial: { title: string; description: string } }) => {
-  const form = useEntityForm({
-    initial,
-    schema: updateInput(projectCategorySchema),
-    save: (payload) => api.put(`/admin/project-categories/${id}`, payload),
-  });
-  return (
-    <form className="form-col" onSubmit={(event) => void form.submit(event)} noValidate aria-label={`Catégorie ${CATEGORY_NAMES[id]}`}>
-      <h4>{CATEGORY_NAMES[id]}</h4>
-      <TextField label="Titre" value={form.values.title} error={form.errorFor('title')} onChange={(title) => form.setField('title', title)} />
-      <TextField label="Description" value={form.values.description} error={form.errorFor('description')} onChange={(description) => form.setField('description', description)} />
-      <FormActions form={form} />
-    </form>
+export const ProjectsPage = () => {
+  const [params, setParams] = useSearchParams();
+  const [managing, setManaging] = useState(false);
+  const categoriesQuery = useProjectCategories();
+  const projectsQuery = useQuery({ queryKey: PROJECTS_QUERY, queryFn: () => api.get<Project[]>('/admin/projects') });
+  const categories = categoriesQuery.data ?? [];
+  const projects = projectsQuery.data ?? [];
+  // Les nombres ne s'affichent qu'une fois connus : pas de « (0) » pendant le chargement.
+  const loaded = categoriesQuery.data !== undefined && projectsQuery.data !== undefined;
+
+  const known = useMemo(() => new Set(categories.map((category) => category.id)), [categories]);
+  const counts = useMemo(() => {
+    const result = new Map<string, number>();
+    for (const project of projects) result.set(project.categoryId, (result.get(project.categoryId) ?? 0) + 1);
+    return result;
+  }, [projects]);
+  const orphans = projects.filter((project) => !known.has(project.categoryId)).length;
+
+  // Un filtre sur une catégorie disparue revient à tout afficher.
+  const requested = params.get(PARAM);
+  const active = requested !== null && (known.has(requested) || (requested === NO_CATEGORY && orphans > 0)) ? requested : null;
+  const select = (id: string | null) => setParams(id ? { [PARAM]: id } : {}, { replace: true });
+
+  const categoryTitle = (id: string) => categories.find((category) => category.id === id)?.title ?? 'Sans catégorie';
+  const chip = (id: string | null, label: string, count: number) => (
+    <button key={id ?? 'toutes'} type="button" className="btn small chip" aria-pressed={active === id} onClick={() => select(id)}>
+      {label} ({count})
+    </button>
   );
-};
 
-const CategoriesPanel = () => {
-  const query = useQuery({
-    queryKey: ['collection', 'project-categories'],
-    queryFn: () => api.get<ProjectCategory[]>('/admin/project-categories'),
-  });
   return (
-    <Group title="Catégories de projets">
-      <QueryState query={query}>
-        {(rows) =>
-          PROJECT_CATEGORY_IDS.map((id) => {
-            const row = rows.find((candidate) => candidate.id === id);
-            return <CategoryRow key={id} id={id} initial={{ title: row?.title ?? '', description: row?.description ?? '' }} />;
-          })
-        }
-      </QueryState>
-    </Group>
-  );
-};
-
-export const ProjectsPage = () => (
-  <div className="form">
     <div className="form-col">
       <EntityList<Project>
         title="Projets"
         path="projects"
         basePath="/projets"
         primary={(row) => row.title}
-        meta={(row) => `${CATEGORY_NAMES[row.categoryId] ?? row.categoryId} · ${row.summary}`}
+        meta={(row) => `${categoryTitle(row.categoryId)} · ${row.summary}`}
         flag={(row) => (row.hidden ? 'Masqué' : null)}
+        {...(active ? { filter: (row: Project) => (active === NO_CATEGORY ? !known.has(row.categoryId) : row.categoryId === active) } : {})}
+        filteredEmptyText="Aucun projet dans cette catégorie."
+        {...(active && active !== NO_CATEGORY ? { addTo: `/projets/nouveau?${PARAM}=${encodeURIComponent(active)}` } : {})}
+        toolbar={<button type="button" className="btn" onClick={() => setManaging(true)}>Gérer les catégories</button>}
+        filters={
+          loaded && (
+          <div className="chips" role="group" aria-label="Filtrer par catégorie">
+            {chip(null, 'Toutes', projects.length)}
+            {categories.map((category) => chip(category.id, category.title, counts.get(category.id) ?? 0))}
+            {orphans > 0 && chip(NO_CATEGORY, 'Sans catégorie', orphans)}
+          </div>
+          )
+        }
       />
+      {managing && <ProjectCategoriesDialog counts={counts} onClose={() => setManaging(false)} />}
     </div>
-    <div className="form-col">
-      <CategoriesPanel />
-    </div>
-  </div>
-);
+  );
+};

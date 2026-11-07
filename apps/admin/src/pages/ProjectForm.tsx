@@ -1,5 +1,7 @@
+import { useSearchParams } from 'react-router';
 import { projectSchema, updateInput, type Project } from '@portfolio-matis/content';
 import { api } from '../api/client.ts';
+import { useProjectCategories } from '../hooks/useProjectCategories.ts';
 import { CapturesPanel, type CaptureValue } from '../components/CapturesPanel.tsx';
 import { FormActions } from '../components/FormActions.tsx';
 import { CheckField, Group, SelectField, TextField } from '../components/FormField.tsx';
@@ -24,14 +26,18 @@ type Values = {
   hidden: boolean;
 };
 
-const CATEGORIES = [
-  { value: 'pro', label: 'Pro' },
-  { value: 'ecole', label: 'École' },
-  { value: 'perso', label: 'Perso' },
-] as const;
-
 const EMPTY: Values = {
-  id: '', title: '', categoryId: 'perso', summary: '', context: '', work: '', result: '', techs: [], links: [], captures: [], hidden: false,
+  id: '', title: '', categoryId: '', summary: '', context: '', work: '', result: '', techs: [], links: [], captures: [], hidden: false,
+};
+
+/** Les catégories existantes, plus celle du projet si elle a disparu, pour qu'elle reste visible tant qu'on n'en change pas. */
+const useCategoryOptions = (current: string) => {
+  const categories = useProjectCategories().data ?? [];
+  const options = categories.map((category) => ({ value: category.id, label: category.title }));
+  if (current && categories.length > 0 && !categories.some((category) => category.id === current)) {
+    options.push({ value: current, label: `« ${current} » (n’existe plus)` });
+  }
+  return options;
 };
 
 const fromRow = (row: Project): Values => ({
@@ -71,6 +77,9 @@ const ProjectFormBody = ({ initial, existingId }: { initial: Values; existingId?
   });
   const { values, setField, errorFor } = form;
   const slug = useSlugFromTitle((id) => setField('id', id));
+  const categoryOptions = useCategoryOptions(values.categoryId);
+  // Le schéma refuse un identifiant vide ; ici, c'est simplement qu'aucune catégorie n'est choisie.
+  const categoryError = errorFor('categoryId') && values.categoryId === '' ? 'Choisissez une catégorie' : errorFor('categoryId');
 
   return (
     <form className="form" onSubmit={(event) => void form.submit(event)} noValidate>
@@ -86,7 +95,14 @@ const ProjectFormBody = ({ initial, existingId }: { initial: Values; existingId?
               if (!existingId) slug.onTitle(title);
             }}
           />
-          <SelectField label="Catégorie" value={values.categoryId} options={CATEGORIES} error={errorFor('categoryId')} onChange={(categoryId) => setField('categoryId', categoryId)} />
+          <SelectField
+            label="Catégorie"
+            value={values.categoryId}
+            options={categoryOptions}
+            placeholder="Choisir une catégorie"
+            error={categoryError}
+            onChange={(categoryId) => setField('categoryId', categoryId)}
+          />
         </div>
         <SlugField value={values.id} readOnly={Boolean(existingId)} error={errorFor('id')} onChange={slug.onId} />
         <TextField label="Résumé" rows={3} value={values.summary} error={errorFor('summary')} onChange={(summary) => setField('summary', summary)} />
@@ -108,7 +124,11 @@ const ProjectFormBody = ({ initial, existingId }: { initial: Values; existingId?
   );
 };
 
-export const NewProjectPage = () => <ProjectFormBody initial={EMPTY} />;
+/** Ouverte depuis une liste filtrée, la création reprend la catégorie du filtre. */
+export const NewProjectPage = () => {
+  const [params] = useSearchParams();
+  return <ProjectFormBody initial={{ ...EMPTY, categoryId: params.get('categorie') ?? '' }} />;
+};
 
 export const EditProjectPage = () => (
   <EntityEdit<Project> path="projects">

@@ -7,10 +7,12 @@ type Props = {
   /** Appelé par Échap, comme le bouton qui referme sans agir. */
   onClose(): void;
   children: ReactNode;
+  /** Une grande fenêtre, qui défile si son contenu dépasse l'écran. */
+  wide?: boolean;
 };
 
 /** Une fenêtre modale : le focus y entre, y reste, Échap la ferme, et le focus revient où il était. */
-export const Dialog = ({ title, onClose, children }: Props) => {
+export const Dialog = ({ title, onClose, children, wide = false }: Props) => {
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
   // Retenu au premier rendu : l'autoFocus d'un bouton de la fenêtre déplace le focus avant les effets.
@@ -46,7 +48,7 @@ export const Dialog = ({ title, onClose, children }: Props) => {
 
   return (
     <div className="overlay">
-      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={box} onKeyDown={onKeyDown}>
+      <div className={wide ? 'dialog wide' : 'dialog'} role="dialog" aria-modal="true" aria-labelledby={titleId} ref={box} onKeyDown={onKeyDown}>
         <h2 id={titleId}>{title}</h2>
         {children}
       </div>
