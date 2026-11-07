@@ -129,8 +129,13 @@ describe('proposition', () => {
     expect(() => buildProposal({ ...jeu, educations: [] }, classique)).toThrow(/BUT MMI/);
   });
 
-  test('reprend le texte « À propos » et les savoir-être du classique', () => {
-    expect(content.profile.about).toBe('Je recherche une collaboration de deux ans.');
+  test('utilise le texte « À propos » validé, cohérent avec la recherche', () => {
+    expect(content.profile.about).toBe(
+      'Développeur full-stack junior, je suis en Bachelor Développement web & IA à CREA Genève et en alternance chez Octoplus Solutions, en parallèle d’une activité de freelance en développement et SEO. J’aime apprendre en construisant et créer des outils utiles au quotidien, notamment pour automatiser ce qui se répète. Je recherche une alternance d’un an à Genève à partir de septembre 2027, pour continuer à monter en compétences sur le web et l’IA.',
+    );
+  });
+
+  test('reprend les savoir-être du classique', () => {
     expect(content.profile.softSkills).toEqual(['Autonomie', 'Patient']);
   });
 
@@ -160,11 +165,9 @@ describe('écarts', () => {
     );
   });
 
-  test('le texte « À propos » repris est mis en regard de la recherche du jeu, qu’il peut contredire', () => {
-    expect(ecart('a-propos')).toMatchObject({
-      jeu: 'Alternance, 1 an, dès Septembre 2027',
-      classique: 'Je recherche une collaboration de deux ans.',
-    });
+  test('l’ancien texte « À propos » et le nouveau restent en trace dans les écarts', () => {
+    expect(ecart('a-propos').classique).toBe('Je recherche une collaboration de deux ans.');
+    expect(ecart('a-propos').jeu).toContain('Développeur full-stack junior');
   });
 
   test('les deux valeurs de l’email sont présentes', () => {

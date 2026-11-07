@@ -6,6 +6,9 @@ export type Ecart = { subject: string; label: string; jeu: string; classique: st
 
 const ABSENT = 'Absent';
 
+const ABOUT_TEXT =
+  'Développeur full-stack junior, je suis en Bachelor Développement web & IA à CREA Genève et en alternance chez Octoplus Solutions, en parallèle d’une activité de freelance en développement et SEO. J’aime apprendre en construisant et créer des outils utiles au quotidien, notamment pour automatiser ce qui se répète. Je recherche une alternance d’un an à Genève à partir de septembre 2027, pour continuer à monter en compétences sur le web et l’IA.';
+
 const CHAMBRE_DU_DEV_ID = 'chambre-du-dev';
 const CHAMBRE_DU_DEV_SUMMARY =
   'Mon portfolio sous forme de jeu : une chambre en pixel art à explorer, avec un moteur d’échecs, des sons synthétisés et un terminal.';
@@ -37,13 +40,11 @@ export const buildEcarts = (jeu: DraftContent, classique: ClassiqueFacts): Ecart
   const github = jeu.contact.links.find((l) => l.href.includes('github.com'))?.href ?? ABSENT;
   const chambre = jeu.projects.find((p) => p.id === CHAMBRE_DU_DEV_ID);
 
-  const { search } = jeu.profile;
-
   return [
     {
       subject: 'a-propos',
-      label: 'Texte « À propos », repris du classique : à comparer à la recherche du jeu',
-      jeu: `${search.contractType}, ${search.duration}, dès ${search.start}`,
+      label: 'Texte « À propos », réécrit pour correspondre à la recherche',
+      jeu: `${ABSENT} ; texte retenu pour les deux sites : ${ABOUT_TEXT}`,
       classique: classique.about || ABSENT,
     },
     { subject: 'email', label: 'Email', jeu: jeu.contact.email, classique: classique.email },
@@ -151,7 +152,7 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
 export const buildProposal = (jeu: DraftContent, classique: ClassiqueFacts): { content: DraftContent; ecarts: Ecart[] } => ({
   content: draftContentSchema.parse({
     ...jeu,
-    profile: { ...jeu.profile, about: classique.about || null, softSkills: classique.softSkills },
+    profile: { ...jeu.profile, about: ABOUT_TEXT, softSkills: classique.softSkills },
     experiences: withSmartInformatique(jeu, classique),
     educations: withClassiqueDetails(jeu, classique),
     projects: jeu.projects.map((p) => (p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p)),
@@ -163,7 +164,7 @@ export const renderEcarts = (ecarts: Ecart[]): string => {
   const sections = ecarts.map((e) => `## ${e.label}\n\n- **Jeu :** ${e.jeu}\n- **Site classique :** ${e.classique}\n`);
   return [
     '# Écarts entre les deux sites\n',
-    'La proposition reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations, le texte « À propos » et les savoir-être du site classique. Les valeurs du jeu priment pour le reste. Ce qui n’est pas repris reste ici comme trace, notamment les compétences absentes du jeu et « Création de mon portfolio ». À relire avant toute publication.\n',
+    'La proposition reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations et les savoir-être du site classique, avec un texte « À propos » et une carte « La Chambre du Dev » réécrits et validés. Les valeurs du jeu priment pour le reste. Ce qui n’est pas repris reste ici comme trace, notamment les compétences absentes du jeu et « Création de mon portfolio ». À relire avant toute publication.\n',
     ...sections,
   ].join('\n');
 };
