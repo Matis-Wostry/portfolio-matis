@@ -63,7 +63,7 @@ pnpm dev:admin
 
 L'interface s'ouvre sur <http://localhost:5173>, et la documentation de l'API sur <http://localhost:3000/docs>. Cette documentation sert à découvrir les routes et leurs schémas : ses boutons d'essai répondent 403 sur les écritures, qui n'acceptent que l'origine de l'interface.
 
-`pnpm import:jeu` suppose que les dépôts `jeu` et `classique` sont à côté de celui-ci. Il écrit dans `import/`, ignoré par Git : `proposition.json` reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations et les savoir-être du site classique, avec un texte « À propos » et une carte « La Chambre du Dev » réécrits pour valoir sur les deux sites. `ecarts.md` garde la trace de ce qui diffère entre les deux sites.
+`pnpm import:jeu` suppose que les dépôts `jeu` et `classique` sont à côté de celui-ci. Il écrit dans `import/`, ignoré par Git : `proposition.json` reprend le contenu du jeu, complété par le stage Smart Informatique et le détail des formations du site classique, dont les savoir-être deviennent des façons de travailler avec chacune sa phrase, et avec un texte « À propos » et une carte « La Chambre du Dev » réécrits pour valoir sur les deux sites. `ecarts.md` garde la trace de ce qui diffère entre les deux sites.
 
 ## Générer le site classique
 

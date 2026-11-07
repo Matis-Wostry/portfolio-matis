@@ -84,11 +84,24 @@ describe('proposition', () => {
   });
 
   test('sépare l’email et le téléphone des autres liens', () => {
-    expect(content.contact).toEqual({
-      email: 'matis.wostry@crea-inseec.com',
-      phone: '+33 6 34 89 62 32',
-      links: [{ label: 'GitHub', href: 'https://github.com/Matis-Wostry' }],
-    });
+    expect(content.contact.phone).toBe('+33 6 34 89 62 32');
+    expect(content.contact.links).toHaveLength(1);
+  });
+
+  test('l’email retenu est l’adresse pro de Matis', () => {
+    expect(content.contact.email).toBe('matiswostry.pro@gmail.com');
+  });
+
+  test('le lien GitHub devient le lien « Mes dépôts Git » vers le Forgejo de Matis, à la même place', () => {
+    expect(content.contact.links).toEqual([{ label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com/matis' }]);
+  });
+
+  test('sans lien GitHub dans le jeu, le lien vers le Forgejo est ajouté en dernier', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const linkedIn = { label: 'LinkedIn', href: 'https://www.linkedin.com/in/matis-wostry/' };
+    const { links } = buildProposal({ ...jeu, contact: { ...jeu.contact, links: [linkedIn] } }, classique).content.contact;
+    expect(links).toEqual([linkedIn, { label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com/matis' }]);
   });
 
   test('donne des identifiants stables aux loisirs et aux compétences, sans leur présentation', () => {
@@ -135,8 +148,22 @@ describe('proposition', () => {
     );
   });
 
-  test('reprend les savoir-être du classique', () => {
-    expect(content.profile.softSkills).toEqual(['Autonomie', 'Patient']);
+  test('les savoir-être deviennent des façons de travailler, chacune avec sa phrase, sans doublon', () => {
+    expect(content.profile.softSkills).toEqual([]);
+    const qualities = content.profile.workStyle.map((w) => w.quality);
+    expect(qualities.slice(-6)).toEqual(['Adaptable', 'Esprit d’analyse', 'Patient', 'Rigoureux', 'Esprit d’équipe', 'Réactif']);
+    expect(new Set(qualities).size).toBe(qualities.length);
+    expect(content.profile.workStyle.find((w) => w.quality === 'Patient')?.proof).toBe(
+      'Les échecs comme les bugs tenaces m’ont appris à chercher calmement plutôt qu’à forcer.',
+    );
+  });
+
+  test('une qualité déjà présente dans le jeu n’est pas ajoutée une seconde fois', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const withPatient = { ...jeu, profile: { ...jeu.profile, workStyle: [...jeu.profile.workStyle, { quality: 'Patient', proof: 'Déjà là.' }] } };
+    const { workStyle } = buildProposal(withPatient, classique).content.profile;
+    expect(workStyle.filter((w) => w.quality === 'Patient')).toEqual([{ quality: 'Patient', proof: 'Déjà là.' }]);
   });
 
   test('la carte « La Chambre du Dev » a un texte neutre, valable sur les deux sites', () => {

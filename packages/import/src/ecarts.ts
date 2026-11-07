@@ -13,6 +13,33 @@ const CHAMBRE_DU_DEV_ID = 'chambre-du-dev';
 const CHAMBRE_DU_DEV_SUMMARY =
   'Mon portfolio sous forme de jeu : une chambre en pixel art à explorer, avec un moteur d’échecs, des sons synthétisés et un terminal.';
 
+/**
+ * Les savoir-être du site classique doublonnaient les façons de travailler du jeu (Autonomie, Curieux) :
+ * ils deviennent des façons de travailler, chacune avec sa phrase, validées par Matis le 2026-11-07.
+ */
+const ADDED_WORK_STYLE = [
+  { quality: 'Adaptable', proof: 'Intégration web, freelance puis alternance : je passe d’un contexte et d’une stack à l’autre.' },
+  { quality: 'Esprit d’analyse', proof: 'Le SEO m’a appris à partir des données, Search Console et Analytics, avant de décider quoi corriger.' },
+  { quality: 'Patient', proof: 'Les échecs comme les bugs tenaces m’ont appris à chercher calmement plutôt qu’à forcer.' },
+  { quality: 'Rigoureux', proof: 'Je teste ce que je livre : JUnit sur la gestion d’école, Vitest sur mes projets récents.' },
+  { quality: 'Esprit d’équipe', proof: 'Le basket et les projets de groupe à l’IUT m’ont appris à partager le travail et à tenir ma partie.' },
+  { quality: 'Réactif', proof: 'En freelance, un site en panne n’attend pas : je réponds et je corrige rapidement.' },
+];
+
+const withAddedWorkStyle = (workStyle: DraftContent['profile']['workStyle']): DraftContent['profile']['workStyle'] => {
+  const known = new Set(workStyle.map((w) => w.quality.toLowerCase()));
+  return [...workStyle, ...ADDED_WORK_STYLE.filter((w) => !known.has(w.quality.toLowerCase()))];
+};
+
+/** Choix de Matis du 2026-11-07 : son adresse pro, et son code sur son Forgejo plutôt que sur GitHub. */
+const CONTACT_EMAIL = 'matiswostry.pro@gmail.com';
+const CODE_LINK = { label: 'Mes dépôts Git', href: 'https://git.matis-wostry.com/matis' };
+
+const withCodeLink = (links: DraftContent['contact']['links']): DraftContent['contact']['links'] =>
+  links.some((link) => link.href.includes('github.com'))
+    ? links.map((link) => (link.href.includes('github.com') ? CODE_LINK : link))
+    : [...links, CODE_LINK];
+
 const normalizeHref = (href: string): string => href.trim().replace(/\/+$/, '').toLowerCase();
 
 const orAbsent = (values: string[]): string => (values.length ? values.join(' ; ') : ABSENT);
@@ -152,7 +179,8 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
 export const buildProposal = (jeu: DraftContent, classique: ClassiqueFacts): { content: DraftContent; ecarts: Ecart[] } => ({
   content: draftContentSchema.parse({
     ...jeu,
-    profile: { ...jeu.profile, about: ABOUT_TEXT, softSkills: classique.softSkills },
+    profile: { ...jeu.profile, about: ABOUT_TEXT, softSkills: [], workStyle: withAddedWorkStyle(jeu.profile.workStyle) },
+    contact: { ...jeu.contact, email: CONTACT_EMAIL, links: withCodeLink(jeu.contact.links) },
     experiences: withSmartInformatique(jeu, classique),
     educations: withClassiqueDetails(jeu, classique),
     projects: jeu.projects.map((p) => (p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p)),
@@ -164,7 +192,7 @@ export const renderEcarts = (ecarts: Ecart[]): string => {
   const sections = ecarts.map((e) => `## ${e.label}\n\n- **Jeu :** ${e.jeu}\n- **Site classique :** ${e.classique}\n`);
   return [
     '# Écarts entre les deux sites\n',
-    'La proposition reprend le contenu du jeu, complété par le stage Smart Informatique, le détail des formations et les savoir-être du site classique, avec un texte « À propos » et une carte « La Chambre du Dev » réécrits et validés. Les valeurs du jeu priment pour le reste. Ce qui n’est pas repris reste ici comme trace, notamment les compétences absentes du jeu et « Création de mon portfolio ». À relire avant toute publication.\n',
+    'La proposition reprend le contenu du jeu, complété par le stage Smart Informatique et le détail des formations du site classique, ses savoir-être devenus des façons de travailler avec chacune sa phrase, avec un texte « À propos » et une carte « La Chambre du Dev » réécrits et validés. Les valeurs du jeu priment pour le reste. Ce qui n’est pas repris reste ici comme trace, notamment les compétences absentes du jeu et « Création de mon portfolio ». À relire avant toute publication.\n',
     ...sections,
   ].join('\n');
 };
