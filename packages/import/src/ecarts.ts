@@ -162,7 +162,8 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
   if (!stage) return jeu.experiences;
   const experience = {
     id: slugify(stage.company),
-    title: stage.title,
+    // Pas de tiret séparateur dans les textes (demande de Matis du 2026-11-08) : le résumé dit déjà qu'il s'agit d'un stage.
+    title: stage.title.replace(/^Stage\s*[–—-]\s*/i, ''),
     company: stage.company,
     kind: 'stage' as const,
     ...parsePeriod(stage.period),
@@ -175,15 +176,74 @@ const withSmartInformatique = (jeu: DraftContent, classique: ClassiqueFacts): Dr
   return [experience, ...jeu.experiences].map((e, position) => ({ ...e, position }));
 };
 
+/**
+ * Le freelance a un seul commanditaire, Le MieuxDisant, pour le SEO comme pour les sites (dont MB Ventilation et MB Home,
+ * projets pro du jeu). Matis utilise SE Ranking, pas SEMrush. Précisions de Matis du 2026-11-08.
+ */
+const FREELANCE_COMPANY = 'Le MieuxDisant (freelance)';
+const FREELANCE_SUMMARY = 'Missions SEO et création de sites WordPress pour Le MieuxDisant.';
+const FREELANCE_SITES = 'Création de sites WordPress pour Le MieuxDisant, dont MB Ventilation et MB Home';
+const TECH_RENAMES: Record<string, string> = { SEMrush: 'SE Ranking' };
+
+/** Remplace les technos renommées, partout, sans laisser de doublon. */
+const renamed = (techs: string[]): string[] => [...new Set(techs.map((tech) => TECH_RENAMES[tech] ?? tech))];
+
+/** L'alternance chez Octoplus, décrite par Matis le 2026-11-08 : du développement full-stack, la création d'un SaaS. */
+const OCTOPLUS_DETAILS = {
+  summary: 'Alternance d’un an en développement full-stack, en parallèle de mon Bachelor à CREA : je participe à la création d’un SaaS.',
+  missions: [
+    'Développement full-stack d’un SaaS, de l’interface à l’API',
+    'Mise en place de la connexion et de la gestion des comptes utilisateurs',
+    'Conception et développement de l’API de l’application',
+  ],
+};
+
+type Experience = DraftContent['experiences'][number];
+
+/**
+ * Les expériences du jeu n'ont que leur titre : elles reprennent les missions et les technos du site classique,
+ * sans écraser ce que le jeu détaille déjà. Le freelance gagne aussi les sites faits pour d'autres clients.
+ */
+const withClassiqueMissions = (experiences: Experience[], classique: ClassiqueFacts): Experience[] => {
+  const fromClassique = (pattern: RegExp, exclude?: RegExp) =>
+    classique.experiences.find((e) => pattern.test(`${e.title} ${e.company}`) && !exclude?.test(`${e.title} ${e.company}`));
+  const fill = (experience: Experience, source: ClassiqueFacts['experiences'][number] | undefined): Experience => ({
+    ...experience,
+    summary: experience.summary ?? (source?.summary || null),
+    missions: experience.missions.length > 0 ? experience.missions : (source?.missions ?? []),
+    techs: experience.techs.length > 0 ? experience.techs : (source?.techs ?? []),
+  });
+  return experiences.map((experience) => {
+    if (experience.kind === 'freelance') {
+      const filled = fill(experience, fromClassique(/freelance/i));
+      if (experience.missions.length > 0) return filled;
+      const { techs } = filled;
+      return {
+        ...filled,
+        company: FREELANCE_COMPANY,
+        summary: experience.summary ?? FREELANCE_SUMMARY,
+        missions: [...filled.missions, FREELANCE_SITES],
+        techs: techs.includes('WordPress') ? techs : [...techs, 'WordPress'],
+      };
+    }
+    if (/mieuxdisant/i.test(experience.company)) return fill(experience, fromClassique(/mieuxdisant/i, /freelance/i));
+    if (/octoplus/i.test(experience.company) && experience.missions.length === 0) {
+      return { ...experience, summary: experience.summary ?? OCTOPLUS_DETAILS.summary, missions: OCTOPLUS_DETAILS.missions };
+    }
+    return experience;
+  });
+};
+
 /** Le contenu du jeu, complété par ce que Matis a choisi de reprendre du site classique. */
 export const buildProposal = (jeu: DraftContent, classique: ClassiqueFacts): { content: DraftContent; ecarts: Ecart[] } => ({
   content: draftContentSchema.parse({
     ...jeu,
     profile: { ...jeu.profile, about: ABOUT_TEXT, softSkills: [], workStyle: withAddedWorkStyle(jeu.profile.workStyle) },
     contact: { ...jeu.contact, email: CONTACT_EMAIL, links: withCodeLink(jeu.contact.links) },
-    experiences: withSmartInformatique(jeu, classique),
+    experiences: withClassiqueMissions(withSmartInformatique(jeu, classique), classique).map((e) => ({ ...e, techs: renamed(e.techs) })),
     educations: withClassiqueDetails(jeu, classique),
-    projects: jeu.projects.map((p) => (p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p)),
+    projects: jeu.projects.map((p) => ({ ...(p.id === CHAMBRE_DU_DEV_ID ? { ...p, summary: CHAMBRE_DU_DEV_SUMMARY } : p), techs: renamed(p.techs) })),
+    skillCategories: jeu.skillCategories.map((c) => ({ ...c, skills: renamed(c.skills) })),
   }),
   ecarts: buildEcarts(jeu, classique),
 });

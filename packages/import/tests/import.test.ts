@@ -57,7 +57,7 @@ describe('proposition', () => {
     expect(content.experiences).toEqual([
       expect.objectContaining({ id: 'smart-informatique', kind: 'stage', position: 0 }),
       expect.objectContaining({ id: 'le-mieuxdisant', title: 'Intégrateur web', company: 'Le MieuxDisant', start: '2024', end: '2025', position: 1 }),
-      expect.objectContaining({ id: 'freelance', title: 'Développeur et SEO', company: 'Freelance', kind: 'freelance', start: '2025', end: '2027', position: 2 }),
+      expect.objectContaining({ id: 'freelance', title: 'Développeur et SEO', company: 'Le MieuxDisant (freelance)', kind: 'freelance', start: '2025', end: '2027', position: 2 }),
     ]);
   });
 
@@ -109,14 +109,78 @@ describe('proposition', () => {
     expect(content.skillCategories[1]).toEqual({ id: 'donnees-api', title: 'Données & API', skills: ['SQL', 'MongoDB'], position: 1 });
   });
 
-  test('n’invente aucun texte absent des deux sites', () => {
-    expect(content.experiences.find((e) => e.id === 'le-mieuxdisant')).toMatchObject({ summary: null, missions: [], techs: [] });
+  test('l’alternance au MieuxDisant reprend les missions et les technos du site classique, en gardant le titre du jeu', () => {
+    expect(content.experiences.find((e) => e.id === 'le-mieuxdisant')).toMatchObject({
+      title: 'Intégrateur web',
+      missions: ['Refonte complète du site avec WordPress', 'Amélioration du référencement naturel'],
+      techs: ['WordPress', 'Figma'],
+    });
+  });
+
+  test('le freelance, pour Le MieuxDisant, reprend les missions SEO du classique et ajoute les sites créés', () => {
+    const freelance = content.experiences.find((e) => e.id === 'freelance');
+    expect(freelance?.company).toBe('Le MieuxDisant (freelance)');
+    expect(freelance?.summary).toBe('Missions SEO et création de sites WordPress pour Le MieuxDisant.');
+    expect(freelance?.missions).toEqual([
+      'Optimisation continue de sites web',
+      'Production de contenus optimisés SEO',
+      'Création de sites WordPress pour Le MieuxDisant, dont MB Ventilation et MB Home',
+    ]);
+  });
+
+  test('aucun titre ni entreprise ne garde de tiret séparateur', () => {
+    const labels = content.experiences.flatMap((e) => [e.title, e.company]);
+    expect(labels.filter((label) => /\s[–—-]\s/.test(label))).toEqual([]);
+  });
+
+  test('SE Ranking remplace SEMrush partout, sans doublon', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const seo = { id: 'seo', title: 'SEO', skills: ['SEMrush', 'SE Ranking', 'Hotjar'], position: 9 };
+    const projects = jeu.projects.map((p, i) => (i === 0 ? { ...p, techs: [...p.techs, 'SEMrush'] } : p));
+    const proposal = buildProposal({ ...jeu, projects, skillCategories: [...jeu.skillCategories, seo] }, classique).content;
+    expect(JSON.stringify(proposal)).not.toContain('SEMrush');
+    expect(proposal.skillCategories.find((c) => c.id === 'seo')?.skills).toEqual(['SE Ranking', 'Hotjar']);
+    expect(proposal.projects[0]?.techs).toContain('SE Ranking');
+  });
+
+  test('SE Ranking remplace SEMrush dans les technos du freelance', () => {    expect(content.experiences.find((e) => e.id === 'freelance')?.techs).toEqual(['SEO', 'SE Ranking', 'WordPress']);
+  });
+
+  test('l’alternance chez Octoplus décrit la création d’un SaaS, sans technos inventées', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const octoplus = { id: 'octoplus-solutions', title: 'Développeur full-stack junior', company: 'Octoplus Solutions', kind: 'alternance' as const, start: '2026', end: '2027', summary: null, missions: [], techs: [], position: 3 };
+    const found = buildProposal({ ...jeu, experiences: [...jeu.experiences, octoplus] }, classique).content.experiences.find((e) => e.id === 'octoplus-solutions');
+    expect(found).toMatchObject({
+      summary: 'Alternance d’un an en développement full-stack, en parallèle de mon Bachelor à CREA : je participe à la création d’un SaaS.',
+      missions: [
+        'Développement full-stack d’un SaaS, de l’interface à l’API',
+        'Mise en place de la connexion et de la gestion des comptes utilisateurs',
+        'Conception et développement de l’API de l’application',
+      ],
+      techs: [],
+    });
+  });
+
+  test('une expérience du jeu déjà détaillée garde ses propres missions', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    const jeu = await readJeu(join(fixtures, 'jeu'));
+    const detailed = jeu.experiences.map((e) => (e.id === 'le-mieuxdisant' ? { ...e, missions: ['Mission du jeu'], techs: ['Vue.js'] } : e));
+    const mieuxDisant = buildProposal({ ...jeu, experiences: detailed }, classique).content.experiences.find((e) => e.id === 'le-mieuxdisant');
+    expect(mieuxDisant).toMatchObject({ missions: ['Mission du jeu'], techs: ['Vue.js'] });
+  });
+
+  test('sur le site classique, des paragraphes sans liste sont des missions, pas un résumé', async () => {
+    const classique = readClassique(await readFile(join(fixtures, 'classique', 'index.html'), 'utf8'));
+    expect(classique.experiences[0]).toMatchObject({ summary: '', missions: ['Optimisation continue de sites web', 'Production de contenus optimisés SEO'] });
+    expect(classique.experiences[2]).toMatchObject({ summary: 'Stage de 8 semaines' });
   });
 
   test('reprend le stage Smart Informatique du classique, avec ses missions et ses technos', () => {
     expect(content.experiences[0]).toEqual({
       id: 'smart-informatique',
-      title: 'Stage – Développeur web',
+      title: 'Développeur web',
       company: 'Smart Informatique',
       kind: 'stage',
       start: '2024',
